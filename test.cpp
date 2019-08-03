@@ -4,6 +4,9 @@
 #include <string>
 
 
+class foo {};
+
+
 int main() {
     std::array<std::string, 6> values{"45", "241", "8", "50", "2390", "3"};
 
@@ -83,7 +86,7 @@ int main() {
     
 
     std::map<int, std::vector<std::string>> age_name_map = streamer(name_ages)
-        .as_listmap(&std::pair<std::string, int>::second, &std::pair<std::string, int>::first);
+        .group_by(&std::pair<std::string, int>::second, &std::pair<std::string, int>::first);
 
     for(auto &names : age_name_map) {
         std::cout << names.first << ": " << streamer(names.second).join(", ") << std::endl;
@@ -91,7 +94,7 @@ int main() {
 
     
     std::map<unsigned int, std::vector<std::string>> len_value_map = streamer(values)
-        .as_listmap(&std::string::length);
+        .group_by(&std::string::length);
 
     std::string first_digits = streamer(len_value_map)
         .flat_map([](auto x) { 
@@ -102,6 +105,8 @@ int main() {
     std::cout << first_digits << std::endl;
 
 
+    foo foos[3];
+    streamer(foos);
     return 0;
 }
 
