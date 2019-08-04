@@ -96,7 +96,7 @@ public:
 
     template<typename UnaryPred>
     bool any(UnaryPred &&pred) && {
-        return std::move(*this).none(pred);
+        return !std::move(*this).none(pred);
     }
 
 
@@ -110,7 +110,7 @@ public:
 
     template<typename UnaryPred>
     bool all(UnaryPred &&pred) && {
-        return std::move(*this).none([pred](auto x) { !pred(x); });
+        return std::move(*this).none([pred](auto x) { return !pred(x); });
     }
 
 
