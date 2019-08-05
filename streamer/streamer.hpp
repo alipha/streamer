@@ -29,9 +29,9 @@ private:
 
 
 template<typename UnaryFunc>
-class flat_map {
+class flat_mapper {
 public:
-    flat_map(UnaryFunc f) : func(f) {}
+    flat_mapper(UnaryFunc f) : func(f) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -52,49 +52,6 @@ public:
 private:
     UnaryFunc func;
 };
-
-
-template<typename UnaryPred>
-class exclude {
-public:
-    exclude(UnaryPred p) : pred(p) {}
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        values.erase(std::remove_if(values.begin(), values.end(), pred), values.end());
-        return std::move(st); 
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-template<typename UnaryPred>
-class filter {
-public:
-    filter(UnaryPred p) : pred(p) {}
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        return exclude([this](auto x) { return !pred(x); }).stream(st, values);
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-static class backwards_t {
-public:
-    backwards_t &operator()() { return *this; }
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        std::reverse(values.begin(), values.end());
-        return std::move(st); 
-    }
-} backwards;
 
 
 template<typename UnaryPred>
@@ -120,7 +77,7 @@ public:
     count_if_t<UnaryPred> operator()(UnaryPred pred) { return count_if_t<UnaryPred>(pred); }
 
     template<typename T>
-    std::vector<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
+    std::size_t &&stream(streamer_t<T> &, std::vector<T> &values) {
         return values.size(); 
     }
 } item_count;
@@ -137,78 +94,27 @@ public:
 } as_vector;
 
 
-template<typename UnaryPred>
-class none_pred_t {
+template<typename UnaryFunc>
+class each {
 public:
-    none_pred_t(UnaryPred p) : pred(p) {}
+    each(UnaryFunc f) : func(f) {}
 
     template<typename T>
-    bool stream(streamer_t<T> &st, std::vector<T> &values) {
-        return std::find_if(values.begin(), values.end(), pred) == values.end();
+    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
+        std::for_each(values.begin(), values.end(), func);
+        return std::move(st);
     }
-
 private:
-    UnaryPred pred;
+    UnaryFunc func;
 };
 
 
-static class none_match_t {
-public:
-    none_match_t &operator()() { return *this; }
-
-    template<typename UnaryPred>
-    none_pred_t<UnaryPred> operator()(UnaryPred pred) { return none_pred_t<UnaryPred>(pred); }
-
-    template<typename T>
-    std::vector<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
-        return values.empty(); 
+namespace detail {
+    inline void streamer_unused_warnings() {
+        item_count();
+        as_vector();
     }
-} none_match;
-
-
-template<typename UnaryPred>
-class any_pred_t {
-public:
-    any_pred_t(UnaryPred p) : pred(p) {}
-
-    template<typename T>
-    bool stream(streamer_t<T> &st, std::vector<T> &values) {
-        return !none(pred).stream(st, values);
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-static class any_match_t {
-public:
-    any_match_t &operator()() { return *this; }
-
-    template<typename UnaryPred>
-    any_pred_t<UnaryPred> operator()(UnaryPred pred) { return any_pred_t<UnaryPred>(pred); }
-
-    template<typename T>
-    std::vector<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
-        return !values.empty(); 
-    }
-} any_match;
-
-
-template<typename UnaryPred>
-class all_match {
-public:
-    all_match(UnaryPred p) : pred(p) {}
-
-    template<typename T>
-    bool stream(streamer_t<T> &st, std::vector<T> &values) {
-        return none([this](auto x) { return !pred(x); }).stream(st, values);
-    }
-
-private:
-    UnaryPred pred;
-};
-
+}
 
 }  // namespace streamer
 
