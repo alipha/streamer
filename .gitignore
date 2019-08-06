@@ -26,8 +26,12 @@
 *.a
 *.lib
 
+# vim
+*.swp
+
 # Executables
 *.exe
 *.out
 *.app
 test
+test2

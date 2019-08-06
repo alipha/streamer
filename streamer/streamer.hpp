@@ -15,7 +15,7 @@ public:
     mapper(UnaryFunc f) : func(f) {}
 
     template<typename T>
-    auto stream(streamer_t<T> &st, std::vector<T> &values) {
+    auto stream(streamer_t<T> &, std::vector<T> &values) {
         auto f = detail::member_mapper(func);
         using U = typename detail::remove_ref_cv<decltype(f(values[0]))>::type;
 
@@ -34,9 +34,9 @@ public:
     flat_mapper(UnaryFunc f) : func(f) {}
 
     template<typename T>
-    auto stream(streamer_t<T> &st, std::vector<T> &values) {
+    auto stream(streamer_t<T> &, std::vector<T> &values) {
         //using Cont = typename detail::remove_ref_cv<decltype(func(std::move(values[0])))>::type;
-        using U = typename detail::remove_ref_cv<decltype(detail::range(func(std::move(values[0]))))>::type;
+        using U = typename detail::remove_ref_cv<decltype(*detail::range(func(std::move(values[0]))).first)>::type;
         
         std::vector<U> out;
 

@@ -233,9 +233,9 @@ public:
     template<typename Comp>
     std::set<T, Comp> as_set(Comp &&comp, bool throw_on_dup = true) && {
         if(!throw_on_dup)
-            return std::set<T>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
+            return std::set<T, Comp>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), comp);
 
-        std::set<T, Comp> out;
+        std::set<T, Comp> out(comp);
 
         for(auto &value : values) {
             if(!out.insert(std::move(value))->second && throw_on_dup)
@@ -252,7 +252,7 @@ public:
 
     template<typename Comp>
     std::multiset<T, Comp> as_multiset(Comp &&comp) && {
-        return std::multiset<T>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), comp);
+        return std::multiset<T, Comp>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), comp);
     }
 
 

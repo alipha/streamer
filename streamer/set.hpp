@@ -25,9 +25,9 @@ public:
     template<typename T>
     std::set<T, Comp> stream(streamer_t<T> &st, std::vector<T> &values) {
         if(!dup_throw)
-            return std::set<T>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()));
+            return std::set<T, Comp>(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), comp);
 
-        std::set<T, Comp> out;
+        std::set<T, Comp> out(comp);
 
         for(auto &value : values) {
             if(!out.insert(std::move(value))->second)
@@ -59,9 +59,44 @@ public:
 } as_set;
 
 
+template<typename Comp>
+class as_multiset_custom_t {
+public:
+    as_multiset_custom_t(Comp c) : comp(c) {}
+
+    template<typename T>
+    std::multiset<T, Comp> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return std::multiset<T, Comp>(
+                std::make_move_iterator(values.begin()), 
+                std::make_move_iterator(values.end()), 
+                comp);
+    }
+
+private:
+    Comp comp;
+};
+
+
+static class as_multiset_t {
+public:
+    as_multiset_t &operator()() { return *this; }
+
+    template<typename Comp>
+    as_multiset_custom_t<Comp> operator()(Comp comp) { 
+        return as_multiset_custom_t<Comp>(comp); 
+    }
+
+    template<typename T>
+    std::multiset<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return as_multiset_custom_t(std::less<T>()).stream(st, values);
+    }
+} as_multiset;
+
+
 namespace detail {
     inline void set_unused_warnings() {
         as_set();
+        as_multiset();
     }
 }
 

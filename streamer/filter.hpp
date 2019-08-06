@@ -53,7 +53,7 @@ public:
     first_if_t(UnaryPred p) : pred(p) {}
 
     template<typename T>
-    std::size_t stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         auto it = std::find_if(values.begin(), values.end(), pred);
         if(it == values.end())
             return {};
@@ -73,7 +73,7 @@ public:
     first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(pred); }
 
     template<typename T>
-    std::optional<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
         return std::optional<T>(std::move(*values.begin()));
@@ -87,7 +87,7 @@ public:
     last_if_t(UnaryPred p) : pred(p) {}
 
     template<typename T>
-    std::size_t stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         auto it = std::find_if(values.rbegin(), values.rend(), pred);
         if(it == values.rend())
             return {};
@@ -107,7 +107,7 @@ public:
     last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(pred); }
 
     template<typename T>
-    std::optional<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
         return std::optional<T>(std::move(*values.rbegin()));
@@ -121,7 +121,7 @@ public:
     single_if_t(UnaryPred p) : pred(p) {}
 
     template<typename T>
-    std::size_t stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         auto it = std::find_if(values.begin(), values.end(), pred);
         if(it == values.end())
             return {};
@@ -143,7 +143,7 @@ public:
     single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(pred); }
 
     template<typename T>
-    std::optional<T> &&stream(streamer_t<T> &, std::vector<T> &values) {
+    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
         if(values.size() > 1)

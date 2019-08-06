@@ -93,32 +93,33 @@ auto range(const streamer_t<U> &s) {
 
 
 template<typename T>
-streamer_t<T> streamer(std::vector<T> &&v) noexcept {
+streamer_t<T> stream(std::vector<T> &&v) noexcept {
     return streamer_t<T>(std::move(v));
 }
 
 template<typename T>
-streamer_t<T> streamer(const T *p, std::size_t n) {
+streamer_t<T> stream(const T *p, std::size_t n) {
     return streamer_t<T>(p, p + n);
 }
 
 template<typename T, std::size_t N>
-streamer_t<T> streamer(const T (&a)[N]) {
+streamer_t<T> stream(const T (&a)[N]) {
     return streamer_t<T>(a, a + N);
 }
 
+/* TODO: add Cont && and Cont & */
 template<typename Cont>
-auto streamer(Cont &&c) {
+auto stream(const Cont &c) {
     return streamer_t<typename detail::remove_ref_cv<decltype(*std::begin(c))>::type>(std::begin(c), std::end(c));
 }
 
 template<typename It>
-auto streamer(It begin, It end) {
+auto stream(It begin, It end) {
     return streamer_t<typename detail::remove_ref_cv<decltype(*begin)>::type>(begin, end);
 }
 
 template<typename T>
-streamer_t<T> streamer_of(std::initializer_list<T> init) noexcept {
+streamer_t<T> stream_of(std::initializer_list<T> init) noexcept {
     return streamer_t<T>(std::vector<T>(init));
 }
 

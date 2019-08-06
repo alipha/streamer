@@ -16,7 +16,7 @@ public:
     join(std::basic_string<Char> delimiter) : delim(std::move(delimiter)) {}
 
     template<typename T>
-    std::basic_string<Char> stream(streamer_t<T> &st, std::vector<T> &values) {
+    std::basic_string<Char> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
         std::basic_stringstream<Char> out;
