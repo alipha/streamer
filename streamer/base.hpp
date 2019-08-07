@@ -80,12 +80,12 @@ private:
 namespace detail {
 
 template<typename Cont>
-auto range(const Cont &c) {
+auto range(Cont &c) {
     return std::make_pair(std::begin(c), std::end(c));
 }
 
 template<typename U>
-auto range(const streamer_t<U> &s) {
+auto range(streamer_t<U> &s) {
     return std::make_pair(s.values.begin(), s.values.end());
 }
 

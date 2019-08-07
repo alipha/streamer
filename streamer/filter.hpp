@@ -153,11 +153,46 @@ public:
 } single;
 
 
+template<typename Comp>
+class distinct_custom_t {
+public:
+    distinct_custom_t(Comp c) : comp(c) {}
+
+    template<typename T>
+    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
+        auto ptrComp = [this](const T *left, const T *right) { return ptrComp(*left, *right); }
+        std::set<T*, decltype(ptrComp)> unique_values;
+
+        values.erase(std::remove_if(values.begin(), values.end(), 
+            [&unique_values](auto &x) { return !unique_values.insert(&x).second; }), values.end());
+        return std::move(st); 
+    }
+
+private:
+    Comp comp;
+};
+
+
+static class distinct_t {
+public:
+    distinct_t &operator()() { return *this; }
+
+    template<typename Comp>
+    distinct_custom_t<Comp> operator()(Comp comp) { return distinct_custom_t<Comp>(comp); }
+
+    template<typename T>
+    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
+        return distinct_custom_t(std::less<T>()).stream(st, values);
+    }
+} distinct;
+
+
 namespace detail {
     inline void filter_unused_warnings() {
         first();
         last();
         single();
+        distinct();
     }
 }
 

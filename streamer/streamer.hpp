@@ -43,7 +43,7 @@ public:
         for(auto &value : values) {
             auto items = func(std::move(value));
             auto r = detail::range(items);
-            out.insert(out.end(), r.first, r.second);
+            out.insert(out.end(), std::make_move_iterator(r.first), std::make_move_iterator(r.second));
         }
 
         return streamer_t<U>(std::move(out));
@@ -106,6 +106,21 @@ public:
     }
 private:
     UnaryFunc func;
+};
+
+
+template<typename It>
+class to_iter {
+public:
+    to_iter(It iter) : it(iter) {}
+
+    template<typename T>
+    void stream(streamer_t<T> &st, std::vector<T> &values) {
+        std::copy(values.begin(), values.end(), it);
+    }
+
+private:
+    It it;
 };
 
 
