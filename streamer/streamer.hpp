@@ -10,9 +10,9 @@ namespace streamer {
 
     
 template<typename UnaryFunc>
-class mapper {
+class mapper : public detail::stream_manip<mapper<UnaryFunc> > {
 public:
-    mapper(UnaryFunc f) : func(f) {}
+    mapper(UnaryFunc f) : func(std::move(f)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -20,7 +20,7 @@ public:
         using U = typename detail::remove_ref_cv<decltype(f(values[0]))>::type;
 
         std::vector<U> out;
-        std::transform(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), std::back_inserter(out), f);
+        std::transform(std::make_move_iterator(values.begin()), std::make_move_iterator(values.end()), std::back_inserter(out), std::move(f));
         return streamer_t<U>(std::move(out));
     }
 private:
@@ -29,9 +29,9 @@ private:
 
 
 template<typename UnaryFunc>
-class flat_mapper {
+class flat_mapper : public detail::stream_manip<flat_mapper<UnaryFunc> > {
 public:
-    flat_mapper(UnaryFunc f) : func(f) {}
+    flat_mapper(UnaryFunc f) : func(std::move(f)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -55,13 +55,13 @@ private:
 
 
 template<typename UnaryPred>
-class count_if_t {
+class count_if_t : public detail::stream_manip<count_if_t<UnaryPred> > {
 public:
-    count_if_t(UnaryPred p) : pred(p) {}
+    count_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     std::size_t stream(streamer_t<T> &, std::vector<T> &values) {
-        return std::count_if(values.begin(), values.end(), pred);
+        return std::count_if(values.begin(), values.end(), std::move(pred));
     }
 
 private:
@@ -69,12 +69,12 @@ private:
 };
 
 
-static class item_count_t {
+static class item_count_t : public detail::stream_manip<item_count_t> {
 public:
     item_count_t &operator()() { return *this; }
 
     template<typename UnaryPred>
-    count_if_t<UnaryPred> operator()(UnaryPred pred) { return count_if_t<UnaryPred>(pred); }
+    count_if_t<UnaryPred> operator()(UnaryPred pred) { return count_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
     std::size_t &&stream(streamer_t<T> &, std::vector<T> &values) {
@@ -83,7 +83,7 @@ public:
 } item_count;
 
 
-static class as_vector_t {
+static class as_vector_t : public detail::stream_manip<as_vector_t> {
 public:
     as_vector_t &operator()() { return *this; }
 
@@ -95,13 +95,13 @@ public:
 
 
 template<typename UnaryFunc>
-class each {
+class each : public detail::stream_manip<each<UnaryFunc> > {
 public:
-    each(UnaryFunc f) : func(f) {}
+    each(UnaryFunc f) : func(std::move(f)) {}
 
     template<typename T>
     streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        std::for_each(values.begin(), values.end(), func);
+        std::for_each(values.begin(), values.end(), std::move(func));
         return std::move(st);
     }
 private:
@@ -110,13 +110,13 @@ private:
 
 
 template<typename It>
-class to_iter {
+class to_iter : public detail::stream_manip<to_iter<It> > {
 public:
-    to_iter(It iter) : it(iter) {}
+    to_iter(It iter) : it(std::move(iter)) {}
 
     template<typename T>
     void stream(streamer_t<T> &st, std::vector<T> &values) {
-        std::copy(values.begin(), values.end(), it);
+        std::copy(values.begin(), values.end(), std::move(it));
     }
 
 private:

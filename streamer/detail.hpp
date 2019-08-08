@@ -9,6 +9,13 @@ namespace streamer {
 namespace detail {
 
 
+template<typename Derived>
+class stream_manip {
+public:
+    Derived &get_derived() { return static_cast<Derived&>(*this); }
+};
+
+
 template<typename T>
 struct remove_ref_cv {
     typedef typename std::remove_cv<typename std::remove_reference<T>::type>::type type;

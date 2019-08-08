@@ -17,13 +17,13 @@ public:
 
 
 template<typename UnaryPred>
-class exclude {
+class exclude : public detail::stream_manip<exclude<UnaryPred> > {
 public:
-    exclude(UnaryPred p) : pred(p) {}
+    exclude(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        values.erase(std::remove_if(values.begin(), values.end(), pred), values.end());
+        values.erase(std::remove_if(values.begin(), values.end(), std::move(pred)), values.end());
         return std::move(st); 
     }
 
@@ -33,9 +33,9 @@ private:
 
 
 template<typename UnaryPred>
-class filter {
+class filter : public detail::stream_manip<filter<UnaryPred> > {
 public:
-    filter(UnaryPred p) : pred(p) {}
+    filter(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -48,13 +48,13 @@ private:
 
 
 template<typename UnaryPred>
-class first_if_t {
+class first_if_t : public detail::stream_manip<first_if_t<UnaryPred> > {
 public:
-    first_if_t(UnaryPred p) : pred(p) {}
+    first_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        auto it = std::find_if(values.begin(), values.end(), pred);
+        auto it = std::find_if(values.begin(), values.end(), std::move(pred));
         if(it == values.end())
             return {};
         return std::optional<T>(std::move(*it));
@@ -65,30 +65,30 @@ private:
 };
 
 
-static class first_t {
+static class first_t : public detail::stream_manip<first_t> {
 public:
     first_t &operator()() { return *this; }
 
     template<typename UnaryPred>
-    first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(pred); }
+    first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
-        return std::optional<T>(std::move(*values.begin()));
+        return std::optional<T>(std::move(values.front()));
     }
 } first;
 
 
 template<typename UnaryPred>
-class last_if_t {
+class last_if_t : public detail::stream_manip<last_if_t<UnaryPred> > {
 public:
-    last_if_t(UnaryPred p) : pred(p) {}
+    last_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        auto it = std::find_if(values.rbegin(), values.rend(), pred);
+        auto it = std::find_if(values.rbegin(), values.rend(), std::move(pred));
         if(it == values.rend())
             return {};
         return std::optional<T>(std::move(*it));
@@ -99,33 +99,33 @@ private:
 };
 
 
-static class last_t {
+static class last_t : public detail::stream_manip<last_t> {
 public:
     last_t &operator()() { return *this; }
 
     template<typename UnaryPred>
-    last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(pred); }
+    last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         if(values.empty())
             return {};
-        return std::optional<T>(std::move(*values.rbegin()));
+        return std::optional<T>(std::move(values.back()));
     }
 } last;
 
 
 template<typename UnaryPred>
-class single_if_t {
+class single_if_t : public detail::stream_manip<single_if_t<UnaryPred> > {
 public:
-    single_if_t(UnaryPred p) : pred(p) {}
+    single_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
         auto it = std::find_if(values.begin(), values.end(), pred);
         if(it == values.end())
             return {};
-        if(std::find_if(it + 1, values.end(), pred) != values.end())
+        if(std::find_if(it + 1, values.end(), std::move(pred)) != values.end())
             throw single_error("streamer contains multiple values matching predicate.");
         return std::optional<T>(std::move(*it));
     }
@@ -135,12 +135,12 @@ private:
 };
 
 
-static class single_t {
+static class single_t : public detail::stream_manip<single_t> {
 public:
     single_t &operator()() { return *this; }
 
     template<typename UnaryPred>
-    single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(pred); }
+    single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
@@ -148,43 +148,9 @@ public:
             return {};
         if(values.size() > 1)
             throw single_error("streamer contains " + std::to_string(values.size()) + " values. Expected 1.");
-        return std::optional<T>(std::move(*values.begin()));
+        return std::optional<T>(std::move(values.front()));
     }
 } single;
-
-
-template<typename Comp>
-class distinct_custom_t {
-public:
-    distinct_custom_t(Comp c) : comp(c) {}
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        auto ptrComp = [this](const T *left, const T *right) { return ptrComp(*left, *right); }
-        std::set<T*, decltype(ptrComp)> unique_values;
-
-        values.erase(std::remove_if(values.begin(), values.end(), 
-            [&unique_values](auto &x) { return !unique_values.insert(&x).second; }), values.end());
-        return std::move(st); 
-    }
-
-private:
-    Comp comp;
-};
-
-
-static class distinct_t {
-public:
-    distinct_t &operator()() { return *this; }
-
-    template<typename Comp>
-    distinct_custom_t<Comp> operator()(Comp comp) { return distinct_custom_t<Comp>(comp); }
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        return distinct_custom_t(std::less<T>()).stream(st, values);
-    }
-} distinct;
 
 
 namespace detail {
@@ -192,7 +158,6 @@ namespace detail {
         first();
         last();
         single();
-        distinct();
     }
 }
 

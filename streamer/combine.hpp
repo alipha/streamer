@@ -9,7 +9,7 @@ namespace streamer {
 
 
 template<typename Cont>
-class concat {
+class concat : public detail::stream_manip<concat<Cont> > {
 public:
     concat(Cont &&c) : cont(std::move(c)) {}
 
@@ -26,9 +26,9 @@ private:
 
 
 template<typename Cont, typename BiFunc>
-class zip {
+class zip : public detail::stream_manip<zip<Cont, BiFunc> > {
 public:
-    zip(Cont &&c, BiFunc f) : cont(std::move(c)), func(f) {}
+    zip(Cont &&c, BiFunc f) : cont(std::forward<Cont>(c)), func(std::move(f)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {

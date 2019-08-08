@@ -16,10 +16,10 @@ public:
 
 
 template<typename KeyFunc, typename ValueFunc>
-class as_unordered_map_t {
+class as_unordered_map_t : public detail::stream_manip<as_unordered_map_t<KeyFunc, ValueFunc> > {
 public:
     as_unordered_map_t(KeyFunc keyFunc, ValueFunc valueFunc, bool throw_on_dup) 
-        : k(keyFunc), v(valueFunc), dup_throw(throw_on_dup) {}
+        : k(std::move(keyFunc)), v(std::move(valueFunc)c), dup_throw(throw_on_dup) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -48,14 +48,14 @@ private:
 
 
 template<typename KeyFunc>
-class as_unordered_map_identity_t {
+class as_unordered_map_identity_t : public detail::stream_manip<as_unordered_map_identity_t<KeyFunc> > {
 public:
     as_unordered_map_identity_t(KeyFunc keyFunc, bool throw_on_dup) 
-        : k(keyFunc), dup_throw(throw_on_dup) {}
+        : k(std::move(keyFunc)), dup_throw(throw_on_dup) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {
-        return as_unordered_map_t(k, identity<T>(), dup_throw).stream(st, values);
+        return as_unordered_map_t(std::move(k), identity<T>(), dup_throw).stream(st, values);
     }
 
 private:
@@ -66,21 +66,22 @@ private:
 
 template<typename KeyFunc, typename ValueFunc>
 auto as_unordered_map(KeyFunc k, ValueFunc v, bool throw_on_dup = true) {
-    return as_unordered_map_t(k, v, throw_on_dup);
+    return as_unordered_map_t(std::move(k), std::move(v), throw_on_dup);
 }
 
 
 template<typename KeyFunc>
 auto as_unordered_map(KeyFunc k, bool throw_on_dup = true) {
-    return as_unordered_map_identity_t(k, throw_on_dup);
+    return as_unordered_map_identity_t(std::move(k), throw_on_dup);
 }
 
 
 
 template<typename KeyFunc, typename ValueFunc>
-class as_unordered_multimap_t {
+class as_unordered_multimap_t : public detail::stream_manip<as_unordered_multimap_t<KeyFunc, ValueFunc> > {
 public:
-    as_unordered_multimap_t(KeyFunc keyFunc, ValueFunc valueFunc) : k(keyFunc), v(valueFunc) {}
+    as_unordered_multimap_t(KeyFunc keyFunc, ValueFunc valueFunc) 
+        : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -106,13 +107,13 @@ private:
 
 
 template<typename KeyFunc>
-class as_unordered_multimap_identity_t {
+class as_unordered_multimap_identity_t : public detail::stream_manip<as_unordered_multimap_identity_t<KeyFunc> > {
 public:
-    as_unordered_multimap_identity_t(KeyFunc keyFunc) : k(keyFunc) {}
+    as_unordered_multimap_identity_t(KeyFunc keyFunc) : k(std::move(keyFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {
-        return as_unordered_multimap_t(k, identity<T>()).stream(st, values);
+        return as_unordered_multimap_t(std::move(k), identity<T>()).stream(st, values);
     }
 
 private:
@@ -122,21 +123,22 @@ private:
 
 template<typename KeyFunc, typename ValueFunc>
 auto as_unordered_multimap(KeyFunc k, ValueFunc v) {
-    return as_unordered_multimap_t(k, v);
+    return as_unordered_multimap_t(std::move(k), std::move(v));
 }
 
 
 template<typename KeyFunc>
 auto as_unordered_multimap(KeyFunc k) {
-    return as_unordered_multimap_identity_t(k);
+    return as_unordered_multimap_identity_t(std::move(k));
 }
 
 
 
 template<typename KeyFunc, typename ValueFunc>
-class as_unordered_grouping_t {
+class as_unordered_grouping_t : public detail::stream_manip<as_unordered_grouping_t<KeyFunc, ValueFunc> > {
 public:
-    as_unordered_grouping_t(KeyFunc keyFunc, ValueFunc valueFunc) : k(keyFunc), v(valueFunc) {}
+    as_unordered_grouping_t(KeyFunc keyFunc, ValueFunc valueFunc) 
+        : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -162,14 +164,14 @@ private:
 
 
 template<typename KeyFunc>
-class as_unordered_grouping_identity_t {
+class as_unordered_grouping_identity_t : public detail::stream_manip<as_unordered_grouping_identity_t<KeyFunc> > {
 public:
     as_unordered_grouping_identity_t(KeyFunc keyFunc) 
-        : k(keyFunc) {}
+        : k(std::move(keyFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {
-        return as_unordered_grouping_t(k, identity<T>()).stream(st, values);
+        return as_unordered_grouping_t(std::move(k), identity<T>()).stream(st, values);
     }
 
 private:
@@ -179,13 +181,13 @@ private:
 
 template<typename KeyFunc, typename ValueFunc>
 auto as_unordered_grouping(KeyFunc k, ValueFunc v) {
-    return as_unordered_grouping_t(k, v);
+    return as_unordered_grouping_t(std::move(k), std::move(v));
 }
 
 
 template<typename KeyFunc>
 auto as_unordered_grouping(KeyFunc k) {
-    return as_unordered_grouping_identity_t(k);
+    return as_unordered_grouping_identity_t(std::move(k));
 }
 
 

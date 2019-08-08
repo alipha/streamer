@@ -20,10 +20,13 @@ class streamer_t;
 namespace detail {
 
 template<typename Cont>
-auto range(const Cont &c);
+auto range(Cont &&c);
 
 template<typename U>
-auto range(const streamer_t<U> &s);
+auto range(streamer_t<U> &&s);
+
+template<typename U>
+auto range(streamer_t<U> &s);
 
 } // namespace detail
 
@@ -64,14 +67,14 @@ public:
     streamer_t &operator=(const streamer_t &) = delete;
 
 private:
-    template<typename U, typename Operation>
-    friend auto operator>>(streamer_t<U> &&st, Operation &&op);
+    template<typename Cont, typename Manip>
+    friend auto operator>>(Cont &&c, detail::stream_manip<Manip> &manip);
 
-    template<typename Cont>
-    friend auto detail::range(const Cont &c);
+    template<typename Cont, typename Manip>
+    friend auto operator>>(Cont &&c, detail::stream_manip<Manip> &&manip);
 
-    template<typename U>
-    friend auto detail::range(const streamer_t<U> &s);
+    friend auto detail::range<>(streamer_t<T> &&s);
+    friend auto detail::range<>(streamer_t<T> &s);
 
     std::vector<T> values;
 };
@@ -80,8 +83,13 @@ private:
 namespace detail {
 
 template<typename Cont>
-auto range(Cont &c) {
+auto range(Cont &&c) {
     return std::make_pair(std::begin(c), std::end(c));
+}
+
+template<typename U>
+auto range(streamer_t<U> &&s) {
+    return std::make_pair(s.values.begin(), s.values.end());
 }
 
 template<typename U>
@@ -91,6 +99,11 @@ auto range(streamer_t<U> &s) {
 
 } // namespace detail
 
+
+template<typename T>
+streamer_t<T> &&stream(streamer_t<T> &&st) noexcept {
+    return std::move(st);
+}
 
 template<typename T>
 streamer_t<T> stream(std::vector<T> &&v) noexcept {
@@ -125,6 +138,29 @@ streamer_t<T> stream_of(std::initializer_list<T> init) noexcept {
 
 
 
+template<typename Cont, typename Manip>
+auto operator>>(Cont &&c, detail::stream_manip<Manip> &manip) {
+    auto st = stream(std::forward<Cont>(c));
+    return manip.get_derived().stream(st, st.values);
+}
+
+template<typename Cont, typename Manip>
+auto operator%(Cont &&c, detail::stream_manip<Manip> &manip) {
+    return std::forward<Cont>(c) >> manip;
+}
+
+template<typename Cont, typename Manip>
+auto operator>>(Cont &&c, detail::stream_manip<Manip> &&manip) {
+    auto st = stream(std::forward<Cont>(c));
+    return manip.get_derived().stream(st, st.values);
+}
+
+template<typename Cont, typename Manip>
+auto operator%(Cont &&c, detail::stream_manip<Manip> &&manip) {
+    return std::forward<Cont>(c) >> std::move(manip);
+}
+
+/*
 template<typename U, typename Operation>
 auto operator>>(streamer_t<U> &&st, Operation &&op) {
     return op.stream(st, st.values);
@@ -132,7 +168,7 @@ auto operator>>(streamer_t<U> &&st, Operation &&op) {
 
 template<typename T, typename Operation>
 auto operator%(streamer_t<T> &&st, Operation &&op) { return std::move(st) >> op; }
-
+*/
 
 }  // namespace streamer
 

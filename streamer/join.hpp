@@ -10,7 +10,7 @@ namespace streamer {
 
     
 template<typename Char>
-class join {
+class join : public detail::stream_manip<join<Char> > {
 public:
     join(const Char *delimiter) : delim(delimiter) {}
     join(std::basic_string<Char> delimiter) : delim(std::move(delimiter)) {}

@@ -18,40 +18,41 @@ using namespace streamer;
 
 
 int main() {
+    
     std::array<std::string, 6> values{"45", "241", "8", "50", "2390", "3"};
 
-    std::string test = stream(values)
+    std::string test = values
         >> sorted(&std::string::length, std::greater<unsigned int>())
         >> join(", ");
 
     std::cout << test << std::endl;
  
-    if(stream(std::vector<int>()) >> first  
-            || stream(values) >> first([](auto x) { return x == "9999"; }))
+    if(std::vector<int>() >> first  
+            || values >> first([](auto x) { return x == "9999"; }))
         std::cout << "Expected first to be empty" << std::endl;
 
     try {
-        stream(values) >> single;
+        values >> single;
         std::cout << "single() should throw" << std::endl;
     } catch(const single_error &e) {
         std::cout << e.what() << std::endl;
     }
 
     try {
-        stream(values) >> single([](auto x) { return x.length() == 1; });
+        values >> single([](auto x) { return x.length() == 1; });
         std::cout << "single(Func) should throw" << std::endl;
     } catch(const single_error &e) {
         std::cout << e.what() << std::endl;
     }
 
-    std::string v = stream(values)
+    std::string v = values
         >> first([](auto x) { return x.length() > 3; })
         >> or_default("default");
 
     std::cout << "value: " << v << std::endl << std::endl;
 
 
-    streamer_t<int> int_stream = stream(values)
+    streamer_t<int> int_stream = values
         >> mapper([](auto x) { return std::stoi(x); });  // string to int
 
     streamer_t<int> int_stream2 = std::move(int_stream)
@@ -76,7 +77,7 @@ int main() {
     };
 
     streamer_t<std::string> names;
-    names = stream(name_ages)
+    names = name_ages
         % mapper(&std::pair<std::string, int>::first);
 
     std::string name = std::move(names)
@@ -87,7 +88,7 @@ int main() {
     std::cout << "first: " << name << std::endl;
 
 
-    std::map<std::string, int> name_age_map = stream(name_ages)
+    std::map<std::string, int> name_age_map = name_ages
         >> as_map(&std::pair<std::string, int>::first, &std::pair<std::string, int>::second);
 
     for(auto &item : name_age_map) {
@@ -95,28 +96,30 @@ int main() {
     }
     
 
-    std::map<int, std::vector<std::string>> age_name_map = stream(name_ages)
+    std::map<int, std::vector<std::string>> age_name_map = name_ages
         >> as_grouping(&std::pair<std::string, int>::second, &std::pair<std::string, int>::first);
 
     for(auto &names : age_name_map) {
-        std::cout << names.first << ": " << stream(names.second) % join(", ") << std::endl;
+        std::cout << names.first << ": " << names.second % join(", ") << std::endl;
     }
 
    
-    std::map<unsigned int, std::vector<std::string>> len_value_map = stream(values)
+    std::map<unsigned int, std::vector<std::string>> len_value_map = values
         >> as_grouping(&std::string::length);
 
-    std::string first_digits = stream(len_value_map)
-        % flat_mapper([](auto x) { 
-            return stream(x.second) >> mapper([](auto y) { return y[0]; });
-        })
-        % join(", ");
+    //std::string first_digits = 
+        len_value_map
+        % flat_mapper([](std::pair<unsigned int, std::vector<std::string> > x)->streamer_t<char> { 
+            return x.second >> mapper([](auto y) { return y[0]; });
+        });
+/*        % join(", ");
 
     std::cout << first_digits << std::endl;
-
+*/
 
     foo foos[3];
     stream(foos);
 
     return 0;
 }
+

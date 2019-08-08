@@ -32,7 +32,7 @@ struct or_default {
 
 template<typename T, typename U>
 T operator>>(std::optional<T> &&opt, or_default<U> &&def) {
-    return std::move<(opt).value_or(std::move(def.val));
+    return std::move(opt).value_or(std::move(def.val));
 }
 
 
