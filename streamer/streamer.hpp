@@ -57,7 +57,7 @@ private:
 template<typename UnaryPred>
 class count_if_t : public detail::stream_manip<count_if_t<UnaryPred> > {
 public:
-    count_if_t(UnaryPred p) : pred(std::move(p)) {}
+    count_if_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     std::size_t stream(streamer_t<T> &, std::vector<T> &values) {

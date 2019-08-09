@@ -18,7 +18,7 @@ public:
 template<typename KeyFunc, typename ValueFunc>
 class as_map_t : public detail::stream_manip<as_map_t<KeyFunc, ValueFunc> > {
 public:
-    as_map_t(KeyFunc keyFunc, ValueFunc valueFunc, bool throw_on_dup) 
+    as_map_t(KeyFunc &&keyFunc, ValueFunc &&valueFunc, bool throw_on_dup) 
         : k(std::move(keyFunc)), v(std::move(valueFunc)), dup_throw(throw_on_dup) {}
 
     template<typename T>
@@ -50,7 +50,7 @@ private:
 template<typename KeyFunc>
 class as_map_identity_t : public detail::stream_manip<as_map_identity_t<KeyFunc> > {
 public:
-    as_map_identity_t(KeyFunc keyFunc, bool throw_on_dup) 
+    as_map_identity_t(KeyFunc &&keyFunc, bool throw_on_dup) 
         : k(std::move(keyFunc)), dup_throw(throw_on_dup) {}
 
     template<typename T>
@@ -80,7 +80,7 @@ auto as_map(KeyFunc k, bool throw_on_dup = true) {
 template<typename KeyFunc, typename ValueFunc>
 class as_multimap_t : public detail::stream_manip<as_multimap_t<KeyFunc, ValueFunc> > {
 public:
-    as_multimap_t(KeyFunc keyFunc, ValueFunc valueFunc) : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
+    as_multimap_t(KeyFunc &&keyFunc, ValueFunc &&valueFunc) : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -108,7 +108,7 @@ private:
 template<typename KeyFunc>
 class as_multimap_identity_t : public detail::stream_manip<as_multimap_identity_t<KeyFunc> > {
 public:
-    as_multimap_identity_t(KeyFunc keyFunc) : k(std::move(keyFunc)) {}
+    as_multimap_identity_t(KeyFunc &&keyFunc) : k(std::move(keyFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -136,7 +136,7 @@ auto as_multimap(KeyFunc k) {
 template<typename KeyFunc, typename ValueFunc>
 class as_grouping_t : public detail::stream_manip<as_grouping_t<KeyFunc, ValueFunc> > {
 public:
-    as_grouping_t(KeyFunc keyFunc, ValueFunc valueFunc) : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
+    as_grouping_t(KeyFunc &&keyFunc, ValueFunc &&valueFunc) : k(std::move(keyFunc)), v(std::move(valueFunc)) {}
 
     template<typename T>
     auto stream(streamer_t<T> &, std::vector<T> &values) {
@@ -164,7 +164,7 @@ private:
 template<typename KeyFunc>
 class as_grouping_identity_t : public detail::stream_manip<as_grouping_identity_t<KeyFunc> > {
 public:
-    as_grouping_identity_t(KeyFunc keyFunc) 
+    as_grouping_identity_t(KeyFunc &&keyFunc) 
         : k(std::move(keyFunc)) {}
 
     template<typename T>

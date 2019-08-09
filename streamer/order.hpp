@@ -73,7 +73,7 @@ private:
 template<typename Comp>
 class sorted_custom_t : public detail::stream_manip<sorted_custom_t<Comp> > {
 public:
-    sorted_custom_t(Comp c) : comp(std::move(c)) {}
+    sorted_custom_t(Comp &&c) : comp(std::move(c)) {}
 
     template<typename T>
     streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -91,11 +91,13 @@ public:
     sorted_t &operator()() { return *this; }
 
     template<typename Comp>
-    sorted_custom_t<Comp> operator()(Comp comp) { return sorted_custom_t<Comp>(std::move(comp)); }
+    auto operator()(Comp comp) { 
+        return sorted_custom_t(detail::member_comparer(std::move(comp))); 
+    }
 
     template<typename KeyFunc, typename Comp>
     auto operator()(KeyFunc k, Comp comp) { 
-        return sorted_custom_t(detail::member_comparer(k, comp)); 
+        return sorted_custom_t(detail::member_comparer_custom(std::move(k), std::move(comp))); 
     }
 
     template<typename T>

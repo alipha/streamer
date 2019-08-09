@@ -6,6 +6,9 @@
 #include <optional>
 
 
+namespace streamer {
+
+
 template<typename BiFunc, typename T>
 class fold_init_t : public detail::stream_manip<fold_init_t<BiFunc, T> > {
 public:
@@ -69,8 +72,9 @@ public:
     minimum_custom_t(Comp &&p) : comp(std::move(p)) {}
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        return fold([this](const auto &x, const auto &y) { return comp(y, x) ? y : x; });
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return fold([this](const auto &x, const auto &y) { return comp(y, x) ? y : x; })
+            .stream(st, values);
     }
 
 private:
@@ -83,11 +87,18 @@ public:
     minimum_t &operator()() { return *this; }
 
     template<typename Comp>
-    minimum_custom_t<Comp> operator()(Comp comp) { return minimum_custom_t<Comp>(std::move(comp)); }
+    auto operator()(Comp comp) { 
+        return minimum_custom_t(detail::member_comparer(std::move(comp))); 
+    }
+
+    template<typename KeyFunc, typename Comp>
+    auto operator()(KeyFunc k, Comp comp) { 
+        return minimum_custom_t(detail::member_comparer_custom(std::move(k), std::move(comp))); 
+    }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        return minimum_custom_t(std::less<T>());
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return minimum_custom_t(std::less<T>()).stream(st, values);
     }
 } minimum;
 
@@ -98,8 +109,9 @@ public:
     maximum_custom_t(Comp &&p) : comp(std::move(p)) {}
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        return fold([this](const auto &x, const auto &y) { return comp(x, y) ? y : x; });
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return fold([this](const auto &x, const auto &y) { return comp(x, y) ? y : x; })
+            .stream(st, values);
     }
 
 private:
@@ -112,13 +124,97 @@ public:
     maximum_t &operator()() { return *this; }
 
     template<typename Comp>
-    maximum_custom_t<Comp> operator()(Comp comp) { return maximum_custom_t<Comp>(std::move(comp)); }
+    auto operator()(Comp comp) { 
+        return maximum_custom_t(detail::member_comparer(std::move(comp))); 
+    }
+
+    template<typename KeyFunc, typename Comp>
+    auto operator()(KeyFunc k, Comp comp) { 
+        return maximum_custom_t(detail::member_comparer_custom(std::move(k), std::move(comp))); 
+    }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        return maximum_custom_t(std::less<T>());
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return maximum_custom_t(std::less<T>()).stream(st, values);
     }
 } maximum;
 
+
+template<typename UnaryFunc>
+class sum_custom_t : public detail::stream_manip<sum_custom_t<UnaryFunc> > {
+public:
+    sum_custom_t(UnaryFunc &&p) : func(std::move(p)) {}
+
+    template<typename T>
+    auto stream(streamer_t<T> &st, std::vector<T> &values) {
+        return fold([this](const auto &x, const auto &y) { return x + func(y); }, 0)
+            .stream(st, values);
+    }
+
+private:
+    UnaryFunc func;
+};
+
+
+static class sum_t : public detail::stream_manip<sum_t> {
+public:
+    sum_t &operator()() { return *this; }
+
+    template<typename UnaryFunc>
+    auto operator()(UnaryFunc func) { 
+        return sum_custom_t(detail::member_mapper(std::move(func))); 
+    }
+
+    template<typename T>
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return sum_custom_t(identity<T>()).stream(st, values);
+    }
+} sum;
+
+
+template<typename UnaryFunc>
+class average_custom_t : public detail::stream_manip<average_custom_t<UnaryFunc> > {
+public:
+    average_custom_t(UnaryFunc &&p) : func(std::move(p)) {}
+
+    template<typename T>
+    auto stream(streamer_t<T> &st, std::vector<T> &values) {
+        using U = decltype(sum(func).stream(st, values));
+        if(values.empty())
+            return std::optional<U>();
+        else
+            return std::optional<U>(sum(func).stream(st, values) / values.size());
+    }
+
+private:
+    UnaryFunc func;
+};
+
+
+static class average_t : public detail::stream_manip<average_t> {
+public:
+    average_t &operator()() { return *this; }
+
+    template<typename UnaryFunc>
+    auto operator()(UnaryFunc func) { 
+        return average_custom_t(detail::member_mapper(std::move(func))); 
+    }
+
+    template<typename T>
+    std::optional<T> stream(streamer_t<T> &st, std::vector<T> &values) {
+        return average_custom_t(identity<T>()).stream(st, values);
+    }
+} average;
+
+
+namespace detail {
+    inline void reduce_unused_warnings() {
+        minimum();
+        maximum();
+        average();
+    }
+} // namespace detail
+
+} // namespace streamer
 
 #endif

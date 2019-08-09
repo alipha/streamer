@@ -22,7 +22,7 @@ int main() {
     std::array<std::string, 6> values{"45", "241", "8", "50", "2390", "3"};
 
     std::string test = values
-        >> sorted(&std::string::length, std::greater<unsigned int>())
+        >> sorted(&std::string::length)//, std::greater<unsigned int>())
         >> join(", ");
 
     std::cout << test << std::endl;
@@ -107,15 +107,13 @@ int main() {
     std::map<unsigned int, std::vector<std::string>> len_value_map = values
         >> as_grouping(&std::string::length);
 
-    //std::string first_digits = 
-        len_value_map
+    std::string first_digits = len_value_map
         % flat_mapper([](std::pair<unsigned int, std::vector<std::string> > x)->streamer_t<char> { 
             return x.second >> mapper([](auto y) { return y[0]; });
-        });
-/*        % join(", ");
+        })
+        % join(", ");
 
     std::cout << first_digits << std::endl;
-*/
 
     foo foos[3];
     stream(foos);

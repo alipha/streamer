@@ -11,7 +11,7 @@ namespace streamer {
 template<typename UnaryPred>
 class none_pred_t : public detail::stream_manip<none_pred_t<UnaryPred> > {
 public:
-    none_pred_t(UnaryPred p) : pred(std::move(p)) {}
+    none_pred_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     bool stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -40,7 +40,7 @@ public:
 template<typename UnaryPred>
 class any_pred_t : public detail::stream_manip<any_pred_t<UnaryPred> > {
 public:
-    any_pred_t(UnaryPred p) : pred(std::move(p)) {}
+    any_pred_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     bool stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -69,7 +69,7 @@ public:
 template<typename UnaryPred>
 class all_match : public detail::stream_manip<all_match<UnaryPred> > {
 public:
-    all_match(UnaryPred p) : pred(std::move(p)) {}
+    all_match(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     bool stream(streamer_t<T> &st, std::vector<T> &values) {

@@ -20,7 +20,7 @@ public:
 template<typename Comp>
 class as_set_custom_t : public detail::stream_manip<as_set_custom_t<Comp> > {
 public:
-    as_set_custom_t(Comp c, bool throw_on_dup) : comp(std::move(c)), dup_throw(throw_on_dup) {}
+    as_set_custom_t(Comp &&c, bool throw_on_dup) : comp(std::move(c)), dup_throw(throw_on_dup) {}
 
     template<typename T>
     std::set<T, Comp> stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -62,7 +62,7 @@ public:
 template<typename Comp>
 class as_multiset_custom_t : public detail::stream_manip<as_multiset_custom_t<Comp> > {
 public:
-    as_multiset_custom_t(Comp c) : comp(std::move(c)) {}
+    as_multiset_custom_t(Comp &&c) : comp(std::move(c)) {}
 
     template<typename T>
     std::multiset<T, Comp> stream(streamer_t<T> &st, std::vector<T> &values) {
@@ -96,7 +96,7 @@ public:
 template<typename Comp>
 class distinct_custom_t : public detail::stream_manip<distinct_custom_t<Comp> > {
 public:
-    distinct_custom_t(Comp c) : comp(std::move(c)) {}
+    distinct_custom_t(Comp &&c) : comp(std::move(c)) {}
 
     template<typename T>
     streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {

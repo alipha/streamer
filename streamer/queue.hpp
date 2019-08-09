@@ -24,7 +24,7 @@ public:
 template<typename Comp>
 class as_priority_queue_custom_t : public detail::stream_manip<as_priority_queue_custom_t<Comp> > {
 public:
-    as_priority_queue_custom_t(Comp c) : comp(std::move(c)) {}
+    as_priority_queue_custom_t(Comp &&c) : comp(std::move(c)) {}
 
     template<typename T>
     std::priority_queue<T, std::vector<T>, Comp> stream(streamer_t<T> &st, std::vector<T> &values) {

@@ -50,7 +50,7 @@ private:
 template<typename UnaryPred>
 class first_if_t : public detail::stream_manip<first_if_t<UnaryPred> > {
 public:
-    first_if_t(UnaryPred p) : pred(std::move(p)) {}
+    first_if_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
@@ -84,7 +84,7 @@ public:
 template<typename UnaryPred>
 class last_if_t : public detail::stream_manip<last_if_t<UnaryPred> > {
 public:
-    last_if_t(UnaryPred p) : pred(std::move(p)) {}
+    last_if_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
@@ -118,7 +118,7 @@ public:
 template<typename UnaryPred>
 class single_if_t : public detail::stream_manip<single_if_t<UnaryPred> > {
 public:
-    single_if_t(UnaryPred p) : pred(std::move(p)) {}
+    single_if_t(UnaryPred &&p) : pred(std::move(p)) {}
 
     template<typename T>
     std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
