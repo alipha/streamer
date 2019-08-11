@@ -156,7 +156,7 @@ auto operator>>(Cont &&c, detail::stream_manip<Manip> &&manip) {
 }
 
 template<typename Cont, typename Manip>
-auto operator%(Cont &&c, detail::stream_manip<Manip> &&manip) {
+auto operator|(Cont &&c, detail::stream_manip<Manip> &&manip) {
     return std::forward<Cont>(c) >> std::move(manip);
 }
 
