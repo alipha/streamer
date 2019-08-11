@@ -1,7 +1,9 @@
 #ifndef STREAMER_DETAIL_HPP
 #define STREAMER_DETAIL_HPP
 
+#include <iterator>
 #include <functional>
+#include <optional>
 #include <type_traits>
 
 
@@ -10,15 +12,58 @@ namespace detail {
 
 
 template<typename Derived>
-class stream_manip {
+class step_wrapper {
 public:
+    step_wrapper() = default;
+
     Derived &get_derived() { return static_cast<Derived&>(*this); }
+
+protected:
+    step_wrapper(const step_wrapper<Derived> &) = default;
+    step_wrapper(step_wrapper<Derived> &&) = default;
+    step_wrapper<Derived> &operator=(const step_wrapper<Derived> &) = default;
+    step_wrapper<Derived> &operator=(step_wrapper<Derived> &&) = default;
 };
+
+
+template<typename T>
+class step {
+public:
+    step() = default;
+
+    step(const step<T> &) = delete;
+    step(step<T> &&) = delete;
+    step<T> &operator=(const step<T> &) = delete;
+    step<T> &operator=(step<T> &&) = delete;
+
+    virtual std::optional<T> get() = 0;
+};
+
 
 
 template<typename T>
 struct remove_ref_cv {
     typedef typename std::remove_cv<typename std::remove_reference<T>::type>::type type;
+};
+
+
+
+template<typename Cont, typename T>
+class cont_source : public step<T> {
+public:
+    cont_source(const Cont &c) : cont(c), it(std::begin(cont)) {}
+    cont_source(Cont &&c) : cont(std::move(c)), it(std::begin(cont)) {}
+
+    std::optional<T> get() override {
+        if(it == cont.end())
+            return {};
+        T value = std::move(*it);
+        ++it;
+        return {std::move(value)};
+    }
+private:
+    Cont cont;
+    decltype(std::begin(cont)) it;
 };
 
 

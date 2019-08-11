@@ -1,9 +1,7 @@
-#ifndef STREAMER_FILTER_HPP
-#define STREAMER_FILTER_HPP
+#ifndef STREAMER_BASE_FILTER_HPP
+#define STREAMER_BASE_FILTER_HPP
 
 #include "base.hpp"
-#include <algorithm>
-#include <optional>
 
 
 namespace streamer {
@@ -16,15 +14,38 @@ public:
 };
 
 
-template<typename UnaryPred>
-class exclude : public detail::stream_manip<exclude<UnaryPred> > {
+
+namespace detail {
+
+
+template<typename UnaryPred, typename T>
+class filter_step : public step<T> {
 public:
-    exclude(UnaryPred p) : pred(std::move(p)) {}
+    filter_step(UnaryPred &&p, std::unique_ptr<step<T> > &&next) 
+        : pred(std::move(p)), next_step(std::move(next)) {}
+
+    std::optional<T> get() override {
+        while(std::optional<T> value = next_step->get()) {
+            if(pred(*value))
+                return value;
+        }
+        return {};
+    }
+private:
+    UnaryPred pred;
+    std::unique_ptr<step<T> > next_step;
+};
+
+
+
+template<typename UnaryPred>
+class first_if_t : public step_wrapper<first_if_t<UnaryPred> > {
+public:
+    first_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        values.erase(std::remove_if(values.begin(), values.end(), std::move(pred)), values.end());
-        return std::move(st); 
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &) {
+        return filter_step<UnaryPred, T>(std::move(pred), std::move(s)).get();
     }
 
 private:
@@ -32,40 +53,7 @@ private:
 };
 
 
-template<typename UnaryPred>
-class filter : public detail::stream_manip<filter<UnaryPred> > {
-public:
-    filter(UnaryPred p) : pred(std::move(p)) {}
-
-    template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::vector<T> &values) {
-        return exclude([this](auto x) { return !pred(x); }).stream(st, values);
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-template<typename UnaryPred>
-class first_if_t : public detail::stream_manip<first_if_t<UnaryPred> > {
-public:
-    first_if_t(UnaryPred &&p) : pred(std::move(p)) {}
-
-    template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        auto it = std::find_if(values.begin(), values.end(), std::move(pred));
-        if(it == values.end())
-            return {};
-        return std::optional<T>(std::move(*it));
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-static class first_t : public detail::stream_manip<first_t> {
+class first_t : public detail::step_wrapper<first_t> {
 public:
     first_t &operator()() { return *this; }
 
@@ -73,25 +61,30 @@ public:
     first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        if(values.empty())
-            return {};
-        return std::optional<T>(std::move(values.front()));
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &) {
+        return s->get();
     }
-} first;
+};
+
 
 
 template<typename UnaryPred>
-class last_if_t : public detail::stream_manip<last_if_t<UnaryPred> > {
+class single_if_t : public step_wrapper<single_if_t<UnaryPred> > {
 public:
-    last_if_t(UnaryPred &&p) : pred(std::move(p)) {}
+    single_if_t(UnaryPred p) : pred(std::move(p)) {}
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        auto it = std::find_if(values.rbegin(), values.rend(), std::move(pred));
-        if(it == values.rend())
-            return {};
-        return std::optional<T>(std::move(*it));
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
+        if(unbounded)
+            throw unbounded_stream("cannot use single(UnaryPred) on an unbounded stream");
+
+        filter_step<UnaryPred, T> f(std::move(pred), std::move(s));
+        std::optional<T> value = f.get();
+
+        if(value && f.get())
+            throw single_error("stream contains multiple values matching predicate");
+
+        return value;
     }
 
 private:
@@ -99,43 +92,7 @@ private:
 };
 
 
-static class last_t : public detail::stream_manip<last_t> {
-public:
-    last_t &operator()() { return *this; }
-
-    template<typename UnaryPred>
-    last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(std::move(pred)); }
-
-    template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        if(values.empty())
-            return {};
-        return std::optional<T>(std::move(values.back()));
-    }
-} last;
-
-
-template<typename UnaryPred>
-class single_if_t : public detail::stream_manip<single_if_t<UnaryPred> > {
-public:
-    single_if_t(UnaryPred &&p) : pred(std::move(p)) {}
-
-    template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        auto it = std::find_if(values.begin(), values.end(), pred);
-        if(it == values.end())
-            return {};
-        if(std::find_if(it + 1, values.end(), std::move(pred)) != values.end())
-            throw single_error("streamer contains multiple values matching predicate.");
-        return std::optional<T>(std::move(*it));
-    }
-
-private:
-    UnaryPred pred;
-};
-
-
-static class single_t : public detail::stream_manip<single_t> {
+class single_t : public detail::step_wrapper<single_t> {
 public:
     single_t &operator()() { return *this; }
 
@@ -143,14 +100,95 @@ public:
     single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::vector<T> &values) {
-        if(values.empty())
-            return {};
-        if(values.size() > 1)
-            throw single_error("streamer contains " + std::to_string(values.size()) + " values. Expected 1.");
-        return std::optional<T>(std::move(values.front()));
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+        if(unbounded)
+            throw unbounded_stream("cannot use single on an unbounded stream");
+
+        std::optional<T> value = s->get();
+        if(value && s->get())
+            throw single_error("stream contains more than a single value");
+
+        return value;
     }
-} single;
+};
+
+
+
+template<typename UnaryPred>
+class last_if_t : public step_wrapper<last_if_t<UnaryPred> > {
+public:
+    last_if_t(UnaryPred p) : pred(std::move(p)) {}
+
+    template<typename T>
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
+        if(unbounded)
+            throw unbounded_stream("cannot use last(UnaryPred) on an unbounded stream");
+
+        std::optional<T> last;
+        filter_step<UnaryPred, T> f(std::move(pred), std::move(s));
+
+        while(std::optional<T> next = f.get()) {
+            last = std::move(next);
+        }
+        return last;
+    }
+
+private:
+    UnaryPred pred;
+};
+
+
+class last_t : public detail::step_wrapper<last_t> {
+public:
+    last_t &operator()() { return *this; }
+
+    template<typename UnaryPred>
+    last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(std::move(pred)); }
+
+    template<typename T>
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+        if(unbounded)
+            throw unbounded_stream("cannot use last on an unbounded stream");
+
+        std::optional<T> last;
+        while(std::optional<T> next = s->get()) {
+            last = std::move(next);
+        }
+        return last;
+    }
+};
+
+
+
+} // namespace detail
+
+
+
+template<typename UnaryPred>
+class filter : public detail::step_wrapper<filter<UnaryPred> > {
+public:
+    filter(UnaryPred p) : pred(std::move(p)) {}
+
+    template<typename T>
+    streamer_t<T> &&stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &) {
+        s.reset(new detail::filter_step<UnaryPred, T>(std::move(pred), std::move(s)));
+        return std::move(st);
+    }
+
+private:
+    UnaryPred pred;
+};
+
+
+template<typename UnaryPred>
+auto exclude(UnaryPred p) {
+    return filter([p](const auto &x) { return !p(x); });
+}
+
+
+static detail::first_t first;
+static detail::last_t last;
+static detail::single_t single;
 
 
 namespace detail {
@@ -159,8 +197,7 @@ namespace detail {
         last();
         single();
     }
-}
-
+} // namespace detail
 
 } // namespace streamer
 

@@ -3,33 +3,11 @@
 
 #include "detail.hpp"
 #include <cstddef>
-#include <initializer_list>
+#include <memory>
 #include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 
 namespace streamer {
-
-
-template<typename T>
-class streamer_t;
-
-
-namespace detail {
-
-template<typename Cont>
-auto range(Cont &&c);
-
-template<typename U>
-auto range(streamer_t<U> &&s);
-
-template<typename U>
-auto range(streamer_t<U> &s);
-
-} // namespace detail
-
 
     
 template<typename T>
@@ -45,132 +23,126 @@ public:
 };
 
 
+class unbounded_stream : public streamer_error {
+public:
+    unbounded_stream(const std::string &what) : streamer_error(what) {}
+    unbounded_stream(const char *what) : streamer_error(what) {}
+};
+
 
 template<typename T>
 class streamer_t {
 public:
-    typedef typename std::vector<T>::value_type value_type;
+    streamer_t(std::unique_ptr<detail::step<T> > &&h, bool unbound) : 
+        head(std::move(h)),
+        unbounded(unbound) {}
+   
+    template<typename Cont>
+    streamer_t(Cont &&cont) : 
+        head(new detail::cont_source<typename std::remove_reference<Cont>::type, T>(std::forward<Cont>(cont))),
+        unbounded(false) {}
+   
+
+    streamer_t(const streamer_t<T> &) = delete;
+    streamer_t<T> &operator=(const streamer_t<T> &) = delete;
+
+    streamer_t(streamer_t<T> &&) = default;
+    streamer_t<T> &operator=(streamer_t<T> &&) = default;
 
 
-    streamer_t() noexcept : values() {}
+    class iterator : public std::iterator<std::input_iterator_tag, T, std::size_t, T*, T&> {
+    public:
+        constexpr iterator() noexcept : input(nullptr), value() {}
+        iterator(detail::step<T> *i) : input(i), value(input->get()) {}
 
-    explicit streamer_t(std::vector<T> &&v) noexcept : values(std::move(v)) {}
+        iterator &operator++() { 
+            value = input->get();
+            return *this;
+        }
 
-    template<typename It>
-    streamer_t(It begin, It end) : values(begin, end) {}
+        iterator operator++(int) {
+            iterator ret = *this;
+            ++(*this);
+            return ret;
+        }
 
+        constexpr bool operator==(const iterator &other) const noexcept { return !value == !other.value; }
+        constexpr bool operator!=(const iterator &other) const noexcept { return !(*this == other); }
+        constexpr T operator*() const { return *std::move(value); }
 
-    streamer_t(streamer_t &&) = default;
-    streamer_t &operator=(streamer_t &&) = default;
-    
-    streamer_t(const streamer_t &) = delete;
-    streamer_t &operator=(const streamer_t &) = delete;
+    private:
+        detail::step<T> *input;
+        std::optional<T> value;
+    };
+
+    constexpr iterator begin() { return iterator(head.get()); }
+    constexpr iterator end() noexcept { return iterator(); }
+
+    bool unbound() const noexcept { return unbounded; }
 
 private:
-    template<typename Cont, typename Manip>
-    friend auto operator>>(Cont &&c, detail::stream_manip<Manip> &manip);
+    template<typename Cont, typename Step>
+    friend auto operator>>(Cont &&cont, detail::step_wrapper<Step> &step);
 
-    template<typename Cont, typename Manip>
-    friend auto operator>>(Cont &&c, detail::stream_manip<Manip> &&manip);
+    template<typename Cont, typename Step>
+    friend auto operator>>(Cont &&cont, detail::step_wrapper<Step> &&step);
 
-    friend auto detail::range<>(streamer_t<T> &&s);
-    friend auto detail::range<>(streamer_t<T> &s);
-
-    std::vector<T> values;
+    std::unique_ptr<detail::step<T> > head;
+    bool unbounded;
 };
+  
 
-
-namespace detail {
 
 template<typename Cont>
-auto range(Cont &&c) {
-    return std::make_pair(std::begin(c), std::end(c));
+auto stream(Cont &&cont) {
+    using T = typename detail::remove_ref_cv<decltype(*std::begin(cont))>::type; 
+    return streamer_t<T>(std::forward<Cont>(cont));
 }
-
-template<typename U>
-auto range(streamer_t<U> &&s) {
-    return std::make_pair(s.values.begin(), s.values.end());
-}
-
-template<typename U>
-auto range(streamer_t<U> &s) {
-    return std::make_pair(s.values.begin(), s.values.end());
-}
-
-} // namespace detail
-
 
 template<typename T>
 streamer_t<T> &&stream(streamer_t<T> &&st) noexcept {
     return std::move(st);
 }
 
-template<typename T>
-streamer_t<T> stream(std::vector<T> &&v) noexcept {
-    return streamer_t<T>(std::move(v));
+
+template<typename Cont, typename Step>
+auto operator>>(Cont &&cont, detail::step_wrapper<Step> &step) {
+    auto st = stream(std::forward<Cont>(cont));
+    return step.get_derived().stream(st, st.head, st.unbounded);
 }
 
-template<typename T>
-streamer_t<T> stream(const T *p, std::size_t n) {
-    return streamer_t<T>(p, p + n);
-}
-
-template<typename T, std::size_t N>
-streamer_t<T> stream(const T (&a)[N]) {
-    return streamer_t<T>(a, a + N);
-}
-
-/* TODO: add Cont && and Cont & */
-template<typename Cont>
-auto stream(const Cont &c) {
-    return streamer_t<typename detail::remove_ref_cv<decltype(*std::begin(c))>::type>(std::begin(c), std::end(c));
-}
-
-template<typename It>
-auto stream(It begin, It end) {
-    return streamer_t<typename detail::remove_ref_cv<decltype(*begin)>::type>(begin, end);
-}
-
-template<typename T>
-streamer_t<T> stream_of(std::initializer_list<T> init) noexcept {
-    return streamer_t<T>(std::vector<T>(init));
+template<typename Cont, typename Step>
+auto operator>>(Cont &&cont, detail::step_wrapper<Step> &&step) {
+    return std::forward<Cont>(cont) >> step;
 }
 
 
 
-template<typename Cont, typename Manip>
-auto operator>>(Cont &&c, detail::stream_manip<Manip> &manip) {
-    auto st = stream(std::forward<Cont>(c));
-    return manip.get_derived().stream(st, st.values);
+template<typename Cont, typename Step>
+auto operator|(Cont &&cont, detail::step_wrapper<Step> &step) {
+    return std::forward<Cont>(cont) >> step;
 }
 
-template<typename Cont, typename Manip>
-auto operator%(Cont &&c, detail::stream_manip<Manip> &manip) {
-    return std::forward<Cont>(c) >> manip;
+template<typename Cont, typename Step>
+auto operator|(Cont &&cont, detail::step_wrapper<Step> &&step) {
+    return std::forward<Cont>(cont) >> std::move(step);
 }
 
-template<typename Cont, typename Manip>
-auto operator>>(Cont &&c, detail::stream_manip<Manip> &&manip) {
-    auto st = stream(std::forward<Cont>(c));
-    return manip.get_derived().stream(st, st.values);
+
+
+template<typename Cont, typename Step>
+auto operator%(Cont &&cont, detail::step_wrapper<Step> &step) {
+    return std::forward<Cont>(cont) >> step;
 }
 
-template<typename Cont, typename Manip>
-auto operator|(Cont &&c, detail::stream_manip<Manip> &&manip) {
-    return std::forward<Cont>(c) >> std::move(manip);
+template<typename Cont, typename Step>
+auto operator%(Cont &&cont, detail::step_wrapper<Step> &&step) {
+    return std::forward<Cont>(cont) >> std::move(step);
 }
 
-/*
-template<typename U, typename Operation>
-auto operator>>(streamer_t<U> &&st, Operation &&op) {
-    return op.stream(st, st.values);
-}
 
-template<typename T, typename Operation>
-auto operator%(streamer_t<T> &&st, Operation &&op) { return std::move(st) >> op; }
-*/
 
-}  // namespace streamer
+} // namespace streamer
 
 
 #endif
