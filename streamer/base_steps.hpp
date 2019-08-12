@@ -48,9 +48,7 @@ public:
 
 private:
     struct state_t {
-        state_t(Cont &&c) : cont(std::move(c)), it(std::begin(cont)), end(std::end(cont)) {
-            //throw_if_unbound(c);
-        }
+        state_t(Cont &&c) : cont(std::move(c)), it(std::begin(cont)), end(std::end(cont)) {}
 
         state_t(const state_t &) = delete;
         state_t(state_t &&) = delete;
@@ -69,17 +67,6 @@ private:
         else
             state.reset();
     }
-
-    /*
-    template<typename X>
-    void throw_if_unbound(const X &x) {}
-
-    template<typename X>
-    void throw_if_unbound(const streamer_t<X> &x) {
-        if(x.unbound())
-            throw unbounded_stream();
-    }
-    */
 
     MemOrFunc func;
     std::optional<state_t> state;
@@ -114,7 +101,7 @@ private:
 
 class count_t : public detail::step_wrapper<count_t> {
 public:
-    count_t &operator()() { return *this; }
+    constexpr count_t &operator()() noexcept { return *this; }
 
     template<typename UnaryPred>
     count_if_t<UnaryPred> operator()(UnaryPred pred) { return count_if_t<UnaryPred>(std::move(pred)); }
@@ -178,13 +165,26 @@ private:
 };
 
 
-static detail::count_t item_count;
-
-
 template<typename UnaryFunc>
-auto each(UnaryFunc f) {
-    return mapping([f](auto x) { f(x); return x; });
-}
+class each : public detail::step_wrapper<each<UnaryFunc> > {
+public:
+    each(UnaryFunc f) : func(std::move(f)) {}
+
+    template<typename T>
+    void stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+        if(unbounded)
+            throw unbounded_stream("cannot use each on an unbounded stream");
+
+        while(std::optional<T> value = s->get())
+            func(*std::move(value));
+    }
+
+private:
+    UnaryFunc func;
+};
+
+
+static detail::count_t item_count;
 
 
 namespace detail {

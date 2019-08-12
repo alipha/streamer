@@ -55,7 +55,7 @@ private:
 
 class first_t : public detail::step_wrapper<first_t> {
 public:
-    first_t &operator()() { return *this; }
+    constexpr first_t &operator()() noexcept { return *this; }
 
     template<typename UnaryPred>
     first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(std::move(pred)); }
@@ -94,7 +94,7 @@ private:
 
 class single_t : public detail::step_wrapper<single_t> {
 public:
-    single_t &operator()() { return *this; }
+    constexpr single_t &operator()() noexcept { return *this; }
 
     template<typename UnaryPred>
     single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(std::move(pred)); }
@@ -140,7 +140,7 @@ private:
 
 class last_t : public detail::step_wrapper<last_t> {
 public:
-    last_t &operator()() { return *this; }
+    constexpr last_t &operator()() noexcept { return *this; }
 
     template<typename UnaryPred>
     last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(std::move(pred)); }

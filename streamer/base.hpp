@@ -33,21 +33,24 @@ public:
 template<typename T>
 class streamer_t {
 public:
-    streamer_t(std::unique_ptr<detail::step<T> > &&h, bool unbound) : 
+    streamer_t(std::unique_ptr<detail::step<T> > &&h, bool unbound) noexcept : 
         head(std::move(h)),
         unbounded(unbound) {}
    
     template<typename Cont>
     streamer_t(Cont &&cont) : 
-        head(new detail::cont_source<typename std::remove_reference<Cont>::type, T>(std::forward<Cont>(cont))),
+        head(new detail::cont_source<typename std::remove_ref_cv<Cont>::type, T>(std::forward<Cont>(cont))),
         unbounded(false) {}
    
+    template<typename It>
+    streamer_t(It &&begin, It &&end) :
+        head(new detail::it_source<typename detail::remove_ref_cv<It>::type, T>(std::move(begin), std::move(end)) {}
 
     streamer_t(const streamer_t<T> &) = delete;
     streamer_t<T> &operator=(const streamer_t<T> &) = delete;
 
-    streamer_t(streamer_t<T> &&) = default;
-    streamer_t<T> &operator=(streamer_t<T> &&) = default;
+    streamer_t(streamer_t<T> &&) noexcept = default;
+    streamer_t<T> &operator=(streamer_t<T> &&) noexcept = default;
 
 
     class iterator : public std::iterator<std::input_iterator_tag, T, std::size_t, T*, T&> {
@@ -68,14 +71,14 @@ public:
 
         constexpr bool operator==(const iterator &other) const noexcept { return !value == !other.value; }
         constexpr bool operator!=(const iterator &other) const noexcept { return !(*this == other); }
-        constexpr T operator*() const { return *std::move(value); }
+        T operator*() const { return *std::move(value); }
 
     private:
         detail::step<T> *input;
         std::optional<T> value;
     };
 
-    constexpr iterator begin() { return iterator(head.get()); }
+    iterator begin() { return iterator(head.get()); }
     constexpr iterator end() noexcept { return iterator(); }
 
     bool unbound() const noexcept { return unbounded; }
@@ -103,6 +106,22 @@ template<typename T>
 streamer_t<T> &&stream(streamer_t<T> &&st) noexcept {
     return std::move(st);
 }
+
+template<typename It>
+auto stream(It begin, It end) {
+    return streamer_t<typename detail::remove_ref_cv<decltype(*begin)>::type>(begin, end);
+}
+
+template<typename T>
+streamer_t<T> stream(const T *p, std::size_t n) {
+    return streamer_t<T>(p, p + n);
+}
+
+template<typename T, std::size_t N>
+streamer_t<T> stream(const T (&a)[N]) {
+    return streamer_t<T>(a, a + N);
+}
+
 
 
 template<typename Cont, typename Step>

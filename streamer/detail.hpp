@@ -14,22 +14,22 @@ namespace detail {
 template<typename Derived>
 class step_wrapper {
 public:
-    step_wrapper() = default;
+    constexpr step_wrapper() noexcept = default;
 
-    Derived &get_derived() { return static_cast<Derived&>(*this); }
+    constexpr Derived &get_derived() noexcept { return static_cast<Derived&>(*this); }
 
 protected:
-    step_wrapper(const step_wrapper<Derived> &) = default;
-    step_wrapper(step_wrapper<Derived> &&) = default;
-    step_wrapper<Derived> &operator=(const step_wrapper<Derived> &) = default;
-    step_wrapper<Derived> &operator=(step_wrapper<Derived> &&) = default;
+    step_wrapper(const step_wrapper<Derived> &) noexcept = default;
+    step_wrapper(step_wrapper<Derived> &&) noexcept = default;
+    step_wrapper<Derived> &operator=(const step_wrapper<Derived> &) noexcept = default;
+    step_wrapper<Derived> &operator=(step_wrapper<Derived> &&) noexcept = default;
 };
 
 
 template<typename T>
 class step {
 public:
-    step() = default;
+    constexpr step() noexcept = default;
 
     step(const step<T> &) = delete;
     step(step<T> &&) = delete;
@@ -67,22 +67,40 @@ private:
 };
 
 
+template<typename It, typename T>
+class it_source : public step<T> {
+public:
+    it_source(It &&begin_it, It &&end_t) : it(std::move(begin_it)), end(std::move(end_it)) {}
+
+    std::optional<T> get() override {
+        if(it == end)
+            return {};
+        T value = std::move(*it);
+        ++it;
+        return {std::move(value)};
+    }
+private:
+    It it;
+    It end;
+};
+
+
 
 template<typename UnaryFunc>
 auto member_mapper(UnaryFunc &&f) { return f; }
 
 template<typename T, typename U>
-auto member_mapper(U T::*p) {
+constexpr auto member_mapper(U T::*p) noexcept {
     return [p](const T &obj) { return obj.*p; };
 }
 
 template<typename T, typename U>
-auto member_mapper(U (T::*p)() const) {
+constexpr auto member_mapper(U (T::*p)() const) noexcept {
     return [p](const T &obj) { return (obj.*p)(); };
 }
 
 template<typename T, typename U>
-auto member_mapper(U (T::*p)() const noexcept) {
+constexpr auto member_mapper(U (T::*p)() const noexcept) noexcept {
     return [p](const T &obj) { return (obj.*p)(); };
 }
 
