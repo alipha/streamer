@@ -51,7 +51,6 @@ struct remove_ref_cv {
 template<typename Cont, typename T>
 class cont_source : public step<T> {
 public:
-    cont_source(const Cont &c) : cont(c), it(std::begin(cont)) {}
     cont_source(Cont &&c) : cont(std::move(c)), it(std::begin(cont)) {}
 
     std::optional<T> get() override {
@@ -70,12 +69,12 @@ private:
 template<typename It, typename T>
 class it_source : public step<T> {
 public:
-    it_source(It &&begin_it, It &&end_t) : it(std::move(begin_it)), end(std::move(end_it)) {}
+    it_source(It &&begin_it, It &&end_it) : it(std::move(begin_it)), end(std::move(end_it)) {}
 
     std::optional<T> get() override {
         if(it == end)
             return {};
-        T value = std::move(*it);
+        T value = *it;
         ++it;
         return {std::move(value)};
     }

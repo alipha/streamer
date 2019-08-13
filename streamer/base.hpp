@@ -36,15 +36,19 @@ public:
     streamer_t(std::unique_ptr<detail::step<T> > &&h, bool unbound) noexcept : 
         head(std::move(h)),
         unbounded(unbound) {}
-   
+  
+    template<typename Cont>
+    streamer_t(Cont &cont) : streamer_t(std::begin(cont), std::end(cont)) {}
+
     template<typename Cont>
     streamer_t(Cont &&cont) : 
-        head(new detail::cont_source<typename std::remove_ref_cv<Cont>::type, T>(std::forward<Cont>(cont))),
+        head(new detail::cont_source<typename detail::remove_ref_cv<Cont>::type, T>(std::move(cont))),
         unbounded(false) {}
-   
+
     template<typename It>
     streamer_t(It &&begin, It &&end) :
-        head(new detail::it_source<typename detail::remove_ref_cv<It>::type, T>(std::move(begin), std::move(end)) {}
+        head(new detail::it_source<typename detail::remove_ref_cv<It>::type, T>(std::move(begin), std::move(end))),
+        unbounded(false) {}
 
     streamer_t(const streamer_t<T> &) = delete;
     streamer_t<T> &operator=(const streamer_t<T> &) = delete;
@@ -56,10 +60,10 @@ public:
     class iterator : public std::iterator<std::input_iterator_tag, T, std::size_t, T*, T&> {
     public:
         constexpr iterator() noexcept : input(nullptr), value() {}
-        iterator(detail::step<T> *i) : input(i), value(input->get()) {}
+        iterator(detail::step<T> *i) : input(i), value(std::move(input->get())) {}
 
         iterator &operator++() { 
-            value = input->get();
+            value = std::move(input->get());
             return *this;
         }
 
@@ -96,17 +100,6 @@ private:
   
 
 
-template<typename Cont>
-auto stream(Cont &&cont) {
-    using T = typename detail::remove_ref_cv<decltype(*std::begin(cont))>::type; 
-    return streamer_t<T>(std::forward<Cont>(cont));
-}
-
-template<typename T>
-streamer_t<T> &&stream(streamer_t<T> &&st) noexcept {
-    return std::move(st);
-}
-
 template<typename It>
 auto stream(It begin, It end) {
     return streamer_t<typename detail::remove_ref_cv<decltype(*begin)>::type>(begin, end);
@@ -121,6 +114,46 @@ template<typename T, std::size_t N>
 streamer_t<T> stream(const T (&a)[N]) {
     return streamer_t<T>(a, a + N);
 }
+
+template<typename Cont>
+auto stream(Cont &cont) {
+    return stream(std::begin(cont), std::end(cont));
+}
+
+template<typename Cont>
+auto stream(Cont &&cont) {
+    using T = typename detail::remove_ref_cv<decltype(*std::begin(cont))>::type; 
+    return streamer_t<T>(std::move(cont));
+}
+
+template<typename T>
+streamer_t<T> &&stream(streamer_t<T> &&st) noexcept {
+    return std::move(st);
+}
+
+
+template<typename It>
+auto stream_move(It begin, It end) {
+    return stream(std::make_move_iterator(begin), std::make_move_iterator(end));
+}
+
+template<typename T>
+streamer_t<T> stream_move(T *p, std::size_t n) {
+    return stream_move(p, p + n);
+}
+
+template<typename T, std::size_t N>
+streamer_t<T> stream_move(const T (&a)[N]) {
+    return stream_move(a, a + N);
+}
+
+template<typename Cont>
+auto stream_move(Cont &cont) {
+    return stream_move(std::begin(cont), std::end(cont));
+}
+
+template<typename Cont>
+auto stream_move(Cont &&cont) { return stream(std::move(cont)); }
 
 
 

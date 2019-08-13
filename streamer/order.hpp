@@ -37,10 +37,10 @@ public:
         : n(amount), next_step(std::move(next)) {}
 
     std::optional<T> get() override {
-        while(value = next_step->get() && n > 0) {
+        std::optional<T> value;
+        while((value = next_step->get()) && n > 0) {
             n--;
         }
-
         return value;
     }
 private:
@@ -57,7 +57,8 @@ public:
     take(std::size_t amount) : n(amount) {}
 
     template<typename T>
-    streamer_t<T> &&stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &) {
+    streamer_t<T> &&stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+        unbounded = false;
         s.reset(new detail::take_step<T>(n, std::move(s)));
         return std::move(st);
     }

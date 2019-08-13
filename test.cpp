@@ -17,7 +17,12 @@
 #include "examples/example_or_get.cpp"
 #include "examples/example_or_throw.cpp"
 #include "examples/example_single.cpp"
-/**/
+#include "examples/example_skip.cpp"
+#include "examples/example_stream.cpp"
+//#include "examples/example_stream_move.cpp"
+//#include "examples/example_stream_of.cpp"
+#include "examples/example_take.cpp"
+
 
 int main() {
     example_as_deque();
@@ -39,5 +44,10 @@ int main() {
     example_or_get();
     example_or_throw();
     example_single();
-/* */   return 0;
+    example_skip();
+    example_stream();
+//    example_stream_move();
+//    example_stream_of();
+    example_take();
+    return 0;
 }
