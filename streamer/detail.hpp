@@ -37,6 +37,7 @@ public:
     step<T> &operator=(step<T> &&) = delete;
 
     virtual std::optional<T> get() = 0;
+    virtual ~step() {}
 };
 
 

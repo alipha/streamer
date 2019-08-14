@@ -31,6 +31,7 @@ void example_stream() {
     std::array<int, 5> input = {56, 3, 23, 100, 42};
     std::vector<int> input2 = {10, 20, 30};
     int input3[] = {2, 3, 5, 7, 11, 13};
+    int *ptr = input3;
 
     
     std::vector<int> result = stream(input) 
@@ -45,16 +46,18 @@ void example_stream() {
     std::vector<int> result4 = stream(input3)
         | as_vector;
 
+    std::vector<int> result5 = stream(ptr, 6)
+        >> as_vector;
 
-    // calling stream() is unnecessary, except for result2
+    // calling stream() is unnecessary, except for result2 and result5
 
-    std::vector<int> result5 = input2 
+    std::vector<int> result6 = input2 
         % as_vector();
 
-    std::vector<int> result6 = std::move(input2)    // most efficient
+    std::vector<int> result7 = std::move(input2)    // most efficient
         % as_vector;
 
-    std::vector<int> result7 = input3
+    std::vector<int> result8 = input3
         | as_vector;
 
 
@@ -62,10 +65,11 @@ void example_stream() {
     std::vector<int> expected2 = {3, 23};
     auto expected3 = expected;
     std::vector<int> expected4 = {2, 3, 5, 7, 11, 13};
+    auto expected5 = expected4;
 
-    std::vector<int> expected5 = {10, 20, 30};
-    auto expected6 = expected5;
-    auto expected7 = expected4;
+    std::vector<int> expected6 = {10, 20, 30};
+    auto expected7 = expected6;
+    auto expected8 = expected4;
 
     assert(result == expected);
     assert(result2 == expected2);
@@ -74,4 +78,5 @@ void example_stream() {
     assert(result5 == expected5);
     assert(result6 == expected6);
     assert(result7 == expected7);
+    assert(result8 == expected8);
 }

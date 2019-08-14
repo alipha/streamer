@@ -46,9 +46,10 @@ public:
         unbounded(false) {}
 
     template<typename It>
-    streamer_t(It &&begin, It &&end) :
+    streamer_t(It begin, It end) :
         head(new detail::it_source<typename detail::remove_ref_cv<It>::type, T>(std::move(begin), std::move(end))),
         unbounded(false) {}
+
 
     streamer_t(const streamer_t<T> &) = delete;
     streamer_t<T> &operator=(const streamer_t<T> &) = delete;
@@ -75,7 +76,7 @@ public:
 
         constexpr bool operator==(const iterator &other) const noexcept { return !value == !other.value; }
         constexpr bool operator!=(const iterator &other) const noexcept { return !(*this == other); }
-        T operator*() const { return *std::move(value); }
+        constexpr T &&operator*() { return std::move(*value); }
 
     private:
         detail::step<T> *input;
@@ -143,7 +144,7 @@ streamer_t<T> stream_move(T *p, std::size_t n) {
 }
 
 template<typename T, std::size_t N>
-streamer_t<T> stream_move(const T (&a)[N]) {
+streamer_t<T> stream_move(T (&a)[N]) {
     return stream_move(a, a + N);
 }
 
@@ -151,9 +152,6 @@ template<typename Cont>
 auto stream_move(Cont &cont) {
     return stream_move(std::begin(cont), std::end(cont));
 }
-
-template<typename Cont>
-auto stream_move(Cont &&cont) { return stream(std::move(cont)); }
 
 
 
