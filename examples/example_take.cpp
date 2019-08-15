@@ -20,9 +20,15 @@ void example_take() {
         | take(0)
         | as_vector;
 
+    std::vector<int> result3 = input
+        | take(10)
+        | as_vector;
+
     std::vector<int> expected = {56, 3, 23};
     std::vector<int> expected2 = {};
+    std::vector<int> expected3 = {56, 3, 23, 100, 42};
 
     assert(result == expected);
     assert(result2 == expected2);
+    assert(result3 == expected3);
 }
