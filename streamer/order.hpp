@@ -76,7 +76,8 @@ public:
         : pred(std::move(p)), next_step(std::move(next)) {}
 
     std::optional<T> get() override {
-        if(std::optional<T> value = next_step->get() && pred(*value))
+        std::optional<T> value = next_step->get();
+        if(value && pred(*value))
             return value;
         else
             return {};
