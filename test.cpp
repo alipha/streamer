@@ -9,8 +9,12 @@
 #include "examples/example_each.cpp"
 #include "examples/example_exclude.cpp"
 #include "examples/example_filter.cpp"
+*/
+#include "examples/example_finite_generator.cpp"
 #include "examples/example_first.cpp"
 #include "examples/example_flat_mapping.cpp"
+#include "examples/example_generator.cpp"
+/*
 #include "examples/example_item_count.cpp"
 #include "examples/example_iterator.cpp"
 #include "examples/example_last.cpp"
@@ -20,15 +24,15 @@
 #include "examples/example_or_throw.cpp"
 #include "examples/example_reversed.cpp"
 #include "examples/example_single.cpp"
-*/
 #include "examples/example_skip.cpp"
 #include "examples/example_skip_while.cpp"
 #include "examples/example_stream.cpp"
+#include "examples/example_stream_empty.cpp"
 #include "examples/example_stream_move.cpp"
 #include "examples/example_stream_of.cpp"
 #include "examples/example_take.cpp"
 #include "examples/example_take_while.cpp"
-/**/
+*/
 
 int main() {
 /*    example_as_deque();
@@ -42,9 +46,12 @@ int main() {
     example_each();
     example_exclude();
     example_filter();
+*/
+    example_finite_generator();
     example_first();
     example_flat_mapping();
-    example_item_count();
+    example_generator();
+/*    example_item_count();
     example_iterator();
     example_last();
     example_mapping();
@@ -53,12 +60,13 @@ int main() {
     example_or_throw();
     example_reversed();
     example_single();
-*/    example_skip();
+    example_skip();
     example_skip_while();
     example_stream();
+    example_stream_empty();
     example_stream_move();
     example_stream_of();
     example_take();
     example_take_while();
-/**/    return 0;
+*/    return 0;
 }

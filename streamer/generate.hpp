@@ -26,16 +26,16 @@ private:
 template<typename UnaryFunc, typename T>
 class func_source : public step<T> {
 public:
-    func_source(T &&seed, UnaryFunc &&f) : value(std::move(seed)), func(std::move(f)) {}
+    func_source(T &&seed, UnaryFunc &&f) : next(std::move(seed)), func(std::move(f)) {}
 
     std::optional<T> get() override {
-        std::optional<T> ret = {value};
-        value = func(std::move(value));
-        return ret;
+        std::optional<T> value = {next};
+        next = func(std::move(next));
+        return value;
     }
 private:
+    T next;
     UnaryFunc func;
-    T value;
 };
 
 
@@ -55,20 +55,41 @@ private:
 template<typename UnaryFunc, typename T>
 class bound_func_source : public step<T> {
 public:
-    bound_func_source(std::optional<T> &&seed, UnaryFunc &&f) : value(std::move(seed)), func(std::move(f)) {}
+    bound_func_source(std::optional<T> &&seed, UnaryFunc &&f) : next(std::move(seed)), func(std::move(f)) {}
 
     std::optional<T> get() override {
-        if(!value)
+        if(!next)
             return {};
-        std::optional<T> ret = value;
-        value = func(std::move(value));
-        return ret;
+        std::optional<T> value = next;
+        next = func(std::move(next));
+        return value;
     }
 private:
+    std::optional<T> next;
     UnaryFunc func;
-    std::optional<T> value;
 };
 
+
+template<typename T, typename UnaryFunc, typename Comp>
+class range_source : public step<T> {
+public:
+    range_source(T &&b, T &&e, UnaryFunc &&f, Comp &&c) 
+        : begin(b), next(std::move(b)), end(std::move(e)), func(std::move(f)), comp(std::move(c)) {}
+
+    std::optional<T> get() override {
+        if(!comp(next, end) || comp(next, begin))
+            return {};
+        T value = next;
+        next = func(std::move(next));
+        return {value};
+    }
+private:
+    T begin;
+    T next;
+    T end;
+    UnaryFunc func;
+    Comp comp;
+};
 
 
 } // namespace detail
@@ -76,36 +97,78 @@ private:
 
 
 template<typename GenFunc>
-auto stream_generate(GenFunc f) {
-    using T = typename detail:remove_ref_cv<decltype(f())>::type;
+auto generator(GenFunc f) {
+    using T = typename detail::remove_ref_cv<decltype(f())>::type;
     return streamer_t<T>(std::make_unique<detail::gen_source<GenFunc, T> >(std::move(f)), true);
 }
 
 
 template<typename T, typename UnaryFunc>
-auto stream_generate(T seed, UnaryFunc f) {
-    using U = typename detail:remove_ref_cv<decltype(f(std::move(seed)))>::type;
-    return streamer_t<U>(std::make_unique<detail::func_source<UnaryFunc, T> >(std::move(seed), std::move(f)), true);
+auto generator(T seed, UnaryFunc f) {
+    using U = typename detail::remove_ref_cv<decltype(f(std::move(seed)))>::type;
+    return streamer_t<U>(std::make_unique<detail::func_source<UnaryFunc, U> >(std::move(seed), std::move(f)), true);
 }
 
 
-template<typename T>
-auto stream_range(T begin, T end) {
-    return stream_generate(std::optional<T>(std::move(begin)), [end](auto x) { return std::less(*x, 
-        if(*x < end)
-            return x;
-        else
-    });
-}
 
-
-template<typename T>
-auto stream_range(T begin, T end, T step) {
+template<typename GenFunc>
+auto finite_generator(GenFunc f) {
+    using OptionalT = typename detail::remove_ref_cv<decltype(f())>::type;
+    using T = typename OptionalT::value_type;
+    return streamer_t<T>(std::make_unique<detail::bound_gen_source<GenFunc, T> >(std::move(f)), false);
 }
 
 
 template<typename T, typename UnaryFunc>
-auto stream_range(T begin, T end, UnaryFunc step) {
+auto finite_generator(std::optional<T> seed, UnaryFunc f) {
+    using OptionalU = typename detail::remove_ref_cv<decltype(f(std::move(seed)))>::type;
+    using U = typename OptionalU::value_type;
+    return streamer_t<U>(std::make_unique<detail::bound_func_source<UnaryFunc, U> >(std::move(seed), std::move(f)), false);
+}
+
+
+
+template<typename T, typename UnaryFunc, typename Comp>
+streamer_t<T> range(T begin, T end, UnaryFunc step, Comp comp) {
+    auto src = new detail::range_source(std::move(begin), std::move(end), std::move(step), std::move(comp));
+    return streamer_t<T>(std::unique_ptr(src), false);
+}
+
+
+template<typename T, typename Comp>
+streamer_t<T> range(T begin, T end, T step, Comp comp) {
+    return range(std::move(begin), std::move(end), [step](auto x) { return x + step; }, std::move(comp));
+}
+
+template<typename T, typename UnaryFunc>
+auto range(T begin, T end, UnaryFunc step) {
+    return range(std::move(begin), std::move(end), std::move(step), std::less<T>());
+}
+
+template<typename T>
+auto range(T begin, T end, T step) {
+    return range(std::move(begin), std::move(end), std::move(step), std::less<T>());
+}
+
+template<typename T>
+auto range(T begin, T end) {
+    return range(std::move(begin), std::move(end), [](auto x) { return ++x; }, std::less<T>());
+}
+
+
+template<typename T, typename UnaryFunc>
+auto range_desc(T begin, T end, UnaryFunc step) {
+    return range(std::move(begin), std::move(end), std::move(step), std::greater<T>());
+}
+
+template<typename T>
+auto range_desc(T begin, T end, T step) {
+    return range(std::move(begin), std::move(end), std::move(step), std::greater<T>());
+}
+
+template<typename T>
+auto range_desc(T begin, T end) {
+    return range(std::move(begin), std::move(end), [](auto x) { return --x; }, std::greater<T>());
 }
 
 

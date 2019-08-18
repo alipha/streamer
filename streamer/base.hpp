@@ -100,6 +100,11 @@ private:
 };
   
 
+template<typename T>
+streamer_t<T> stream_empty() {
+    return streamer_t<T>(std::make_unique<detail::empty_source<T> >(), false);
+}
+
 
 template<typename It>
 auto stream(It begin, It end) {

@@ -85,6 +85,12 @@ private:
 };
 
 
+template<typename T>
+class empty_source : public step<T> {
+public:
+    std::optional<T> get() override { return {}; }
+};
+
 
 template<typename UnaryFunc>
 auto member_mapper(UnaryFunc &&f) { return f; }
