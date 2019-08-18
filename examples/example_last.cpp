@@ -1,3 +1,4 @@
+#include "../streamer/generate.hpp"
 #include "../streamer/streamer.hpp"
 #include <cassert>
 #include <vector>
@@ -8,6 +9,8 @@
  *
  * last(UnaryPred) returns the last element in the stream matching the predicate, or 
  * an empty std::optional if no elements match the predicate.
+ *
+ * last cannot be used with an infinite stream.
 */
 void example_last() {
     using namespace streamer;
@@ -15,6 +18,7 @@ void example_last() {
     std::vector<int> input = {8, 3, 23, 100, 4};
     std::vector<int> empty_input = {};
     
+
     std::optional<int> result = input 
         >> last([](auto x) { return x > 10; });
 
@@ -23,6 +27,18 @@ void example_last() {
 
     std::optional<int> result2 = input >> last;
     std::optional<int> no_result2 = empty_input >> last();
+
+
+    try {
+        generator([]() { return 1; }) | last;
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
+    try {
+        generator([]() { return 1; }) | last([](auto x) { return x > 10; });
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
 
     assert(result.value() == 100);
     assert(!no_result);

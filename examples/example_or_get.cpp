@@ -20,12 +20,17 @@ void example_or_get() {
         >> first 
         >> or_get([&count]() { count++; return 999; });
 
-    int result2 = empty_input 
-        >> first 
-        >> or_get([&count2]() { count2++; return 999; });
+    int result2 = input 
+        % first 
+        % or_get([&count]() { count++; return 999; });
+
+    int result3 = empty_input 
+        | first()
+        | or_get([&count2]() { count2++; return 999; });
 
     assert(result == 15);
-    assert(result2 == 999);
+    assert(result2 == 15);
+    assert(result3 == 999);
     assert(count == 0);
     assert(count2 == 1);
 }

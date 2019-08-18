@@ -1,3 +1,4 @@
+#include "../streamer/generate.hpp"
 #include "../streamer/set.hpp"
 #include <algorithm>
 #include <array>
@@ -20,6 +21,8 @@ void example_as_multiset_member_var();
  *
  * as_multiset(Mem, Comp) returns a std::multiset ordered by the Comp applied
  * to the specified member function or member variable. 
+ *
+ * as_multiset cannot be used with an infinite stream.
 */
 void example_as_multiset() {
     example_as_multiset_basic();
@@ -45,6 +48,17 @@ void example_as_multiset_basic() {
 
     auto result4 = input
         | as_multiset([](auto left, auto right) { return left % 10 < right % 10; });
+
+
+    try {
+        generator([]() { return 1; }) | as_multiset;
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
+    try {
+        generator([]() { return 1; }) | as_multiset(std::greater<int>());
+        assert(false);
+    } catch(const unbounded_stream &) {}
 
 
     std::array<int, 5> expected = {7, 23, 23, 56, 100};

@@ -1,3 +1,4 @@
+#include "../streamer/generate.hpp"
 #include "../streamer/queue.hpp"
 #include <array>
 #include <cassert>
@@ -6,6 +7,7 @@
  * as_queue and as_queue() move the elements in the stream into a std::queue and returns the std::queue.
  * The first element of the stream is the first element to be popped.
  * as_queue and as_queue() force the steps of the stream to be executed.
+ * as_queue and as_queue() cannot be used with an infinite stream.
 */
 void example_as_queue() {
     using namespace streamer;
@@ -17,6 +19,12 @@ void example_as_queue() {
 
     std::queue<int> result2 = input
         | as_queue();
+
+    try {
+        generator([]() { return 1; }) | as_queue;
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
 
     std::deque<int> expected = {56, 3, 23, 100, 42};
     std::queue<int> expected_queue(expected);

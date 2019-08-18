@@ -39,37 +39,6 @@ private:
 };
 
 
-template<typename GenFunc, typename T>
-class bound_gen_source : public step<T> {
-public:
-    bound_gen_source(GenFunc &&f) : func(std::move(f)) {}
-
-    std::optional<T> get() override {
-        return func();
-    }
-private:
-    GenFunc func;
-};
-
-
-template<typename UnaryFunc, typename T>
-class bound_func_source : public step<T> {
-public:
-    bound_func_source(std::optional<T> &&seed, UnaryFunc &&f) : next(std::move(seed)), func(std::move(f)) {}
-
-    std::optional<T> get() override {
-        if(!next)
-            return {};
-        std::optional<T> value = next;
-        next = func(std::move(next));
-        return value;
-    }
-private:
-    std::optional<T> next;
-    UnaryFunc func;
-};
-
-
 template<typename T, typename UnaryFunc, typename Comp>
 class range_source : public step<T> {
 public:
@@ -111,33 +80,34 @@ auto generator(T seed, UnaryFunc f) {
 
 
 
-template<typename GenFunc>
-auto finite_generator(GenFunc f) {
-    using OptionalT = typename detail::remove_ref_cv<decltype(f())>::type;
-    using T = typename OptionalT::value_type;
-    return streamer_t<T>(std::make_unique<detail::bound_gen_source<GenFunc, T> >(std::move(f)), false);
+template<typename T, typename UnaryFunc, typename KeyFunc, typename Comp>
+streamer_t<T> range(T begin, T end, UnaryFunc step, KeyFunc keyFunc, Comp comp) {
+    auto c = detail::member_comparer(std::move(keyFunc), std::move(comp));
+    auto src = new detail::range_source<T, UnaryFunc, decltype(c)>(std::move(begin), std::move(end), std::move(step), std::move(c));
+    using SrcType = typename std::pointer_traits<decltype(src)>::element_type;
+    return streamer_t<T>(std::unique_ptr<SrcType>(src), false);
 }
-
-
-template<typename T, typename UnaryFunc>
-auto finite_generator(std::optional<T> seed, UnaryFunc f) {
-    using OptionalU = typename detail::remove_ref_cv<decltype(f(std::move(seed)))>::type;
-    using U = typename OptionalU::value_type;
-    return streamer_t<U>(std::make_unique<detail::bound_func_source<UnaryFunc, U> >(std::move(seed), std::move(f)), false);
-}
-
 
 
 template<typename T, typename UnaryFunc, typename Comp>
 streamer_t<T> range(T begin, T end, UnaryFunc step, Comp comp) {
-    auto src = new detail::range_source(std::move(begin), std::move(end), std::move(step), std::move(comp));
-    return streamer_t<T>(std::unique_ptr(src), false);
+    auto c = detail::member_comparer(std::move(comp));
+    auto src = new detail::range_source<T, UnaryFunc, decltype(c)>(std::move(begin), std::move(end), std::move(step), std::move(c));
+    using SrcType = typename std::pointer_traits<decltype(src)>::element_type;
+    return streamer_t<T>(std::unique_ptr<SrcType>(src), false);
 }
 
 
+template<typename T, typename KeyFunc, typename Comp>
+streamer_t<T> range(T begin, T end, T step, KeyFunc keyFunc, Comp comp) {
+    auto c = detail::member_comparer(std::move(keyFunc), std::move(comp));
+    return range(std::move(begin), std::move(end), [step](auto x) { return x += step; }, std::move(c));
+}
+
 template<typename T, typename Comp>
 streamer_t<T> range(T begin, T end, T step, Comp comp) {
-    return range(std::move(begin), std::move(end), [step](auto x) { return x + step; }, std::move(comp));
+    auto c = detail::member_comparer(std::move(comp));
+    return range(std::move(begin), std::move(end), [step](auto x) { return x += step; }, std::move(c));
 }
 
 template<typename T, typename UnaryFunc>

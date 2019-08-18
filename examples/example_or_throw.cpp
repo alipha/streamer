@@ -26,13 +26,13 @@ void example_or_throw() {
     int result2 = input >> first >> or_throw();
 
     int result3 = input 
-        >> first 
-        >> or_throw(std::runtime_error("shouldn't get thrown"));
+        % first 
+        % or_throw(std::runtime_error("shouldn't get thrown"));
 
     int count = 0;
     int result4 = input 
-        >> first 
-        >> or_throw([&count]() { ++count; return std::runtime_error("also shouldn't get thrown"); });
+        | first 
+        | or_throw([&count]() { ++count; return std::runtime_error("also shouldn't get thrown"); });
     
     try {
         empty_input >> first >> or_throw;

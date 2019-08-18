@@ -16,9 +16,9 @@ void example_or_default() {
 
     int result = input >> first >> or_default(999);
     int result2 = empty_input >> first >> or_default(999);
-    int result3 = empty_input >> first >> or_default();
-    int result4 = empty_input >> first >> or_default;
-    int result5 = input >> first >> or_default;
+    int result3 = empty_input % first % or_default();
+    int result4 = empty_input | first | or_default;
+    int result5 = input | first | or_default;
 
     assert(result == 15);
     assert(result2 == 999);

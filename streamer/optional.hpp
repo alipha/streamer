@@ -23,14 +23,31 @@ struct func_or_except<Func, true> {
 
 
 
+template<typename Derived>
+class opt_step_wrapper {
+public:
+    constexpr opt_step_wrapper() noexcept = default;
+
+    constexpr Derived &get_derived() & noexcept { return static_cast<Derived&>(*this); }
+    constexpr Derived &&get_derived() && noexcept { return static_cast<Derived&&>(*this); }
+
+protected:
+    opt_step_wrapper(const opt_step_wrapper<Derived> &) noexcept = default;
+    opt_step_wrapper(opt_step_wrapper<Derived> &&) noexcept = default;
+    opt_step_wrapper<Derived> &operator=(const opt_step_wrapper<Derived> &) noexcept = default;
+    opt_step_wrapper<Derived> &operator=(opt_step_wrapper<Derived> &&) noexcept = default;
+};
+
+
+
 template<typename T>
-struct or_default_value_t {
+struct or_default_value_t : opt_step_wrapper<or_default_value_t<T> > {
     or_default_value_t(T value) : val(std::move(value)) {}
     T val;
 };
 
 
-struct or_default_t {
+struct or_default_t : opt_step_wrapper<or_default_t> {
     or_default_t &operator()() { return *this; }
 
     template<typename T>
@@ -42,13 +59,13 @@ struct or_default_t {
 
 
 template<typename Func>
-struct or_throw_func_t {                
+struct or_throw_func_t : opt_step_wrapper<or_throw_func_t<Func> > {                
     or_throw_func_t(Func f) : func(std::move(f)) {}   
     Func func;                                
 };                                                       
 
 
-struct or_throw_t {
+struct or_throw_t : opt_step_wrapper<or_throw_t> {
     or_throw_t &operator()() { return *this; }
 
     template<typename Func>
@@ -62,7 +79,7 @@ struct or_throw_t {
 
 
 template<typename Func>
-struct or_get {
+struct or_get : detail::opt_step_wrapper<or_get<Func> > {
     or_get(Func f) : func(std::move(f)) {}
     Func func;
 };
@@ -105,6 +122,29 @@ template<typename T>
 T operator>>(std::optional<T> &&opt, const detail::or_throw_t &) {
     return opt.value();
 }
+
+
+
+template<typename T, typename OptStep>
+auto operator%(std::optional<T> &&opt, detail::opt_step_wrapper<OptStep> &step) {
+    return std::move(opt) >> step.get_derived();
+}
+
+template<typename T, typename OptStep>
+auto operator%(std::optional<T> &&opt, detail::opt_step_wrapper<OptStep> &&step) {
+    return std::move(opt) >> std::move(step).get_derived();
+}
+
+template<typename T, typename OptStep>
+auto operator|(std::optional<T> &&opt, detail::opt_step_wrapper<OptStep> &step) {
+    return std::move(opt) >> step.get_derived();
+}
+
+template<typename T, typename OptStep>
+auto operator|(std::optional<T> &&opt, detail::opt_step_wrapper<OptStep> &&step) {
+    return std::move(opt) >> std::move(step).get_derived();
+}
+
 
 
 namespace detail {

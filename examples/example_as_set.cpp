@@ -1,3 +1,4 @@
+#include "../streamer/generate.hpp"
 #include "../streamer/set.hpp"
 #include <algorithm>
 #include <array>
@@ -25,6 +26,8 @@ void example_as_set_member_var();
  *
  * as_set(false), as_set(comp, false), or as_set(&mem, comp, false) may be used to
  * ignore duplicate elements.
+ *
+ * as_set cannot be used with an infinite stream.
 */
 void example_as_set() {
     example_as_set_basic();
@@ -79,6 +82,22 @@ void example_as_set_basic() {
         input2 | as_set(std::greater<int>(), true);
         assert(false);
     } catch(const duplicate_set_key &) {}
+
+    
+    try {
+        generator([]() { return 1; }) | as_set;
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
+    try {
+        generator([]() { return 1; }) | as_set(false);
+        assert(false);
+    } catch(const unbounded_stream &) {}
+
+    try {
+        generator([]() { return 1; }) | as_set(std::greater<int>(), false);
+        assert(false);
+    } catch(const unbounded_stream &) {}
 
 
     std::array<int, 5> expected = {7, 23, 42, 56, 100};
@@ -159,7 +178,7 @@ void example_as_set_member_var() {
         sipair{"Carrot", 5}
     };
     
-    std::array<sipair, 3> input6 = {
+    std::array<sipair, 4> input6 = {
         sipair{"Apple", 10},
         sipair{"Banana", 3},
         sipair{"Carrot", 5},

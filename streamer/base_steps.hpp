@@ -128,7 +128,7 @@ public:
 
     template<typename T>
     auto stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
-        auto f = detail::member_mapper(func);
+        auto f = detail::member_mapper(std::move(func));
         using U = typename detail::remove_ref_cv<decltype(f(*std::move(s->get())))>::type;
 
         auto ptr = new detail::mapping_step<decltype(f), T, U>(std::move(f), std::move(s)); 
@@ -148,7 +148,7 @@ public:
 
     template<typename T>
     auto stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
-        auto f = detail::member_mapper(func);
+        auto f = detail::member_mapper(std::move(func));
         using Cont = typename detail::remove_ref_cv<decltype(f(*std::move(s->get())))>::type;
         using U = typename detail::remove_ref_cv<decltype(front(f(*std::move(s->get()))))>::type;
 
@@ -171,10 +171,7 @@ public:
     each(UnaryFunc f) : func(std::move(f)) {}
 
     template<typename T>
-    void stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
-        if(unbounded)
-            throw unbounded_stream("cannot use each on an unbounded stream");
-
+    void stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &) {
         while(std::optional<T> value = s->get())
             func(*std::move(value));
     }
