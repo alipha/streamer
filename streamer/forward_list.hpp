@@ -11,12 +11,12 @@ namespace streamer {
 namespace detail {
 
     
-class as_forward_list_t : public detail::step_wrapper<as_forward_list_t> {
+class as_forward_list_t : public step_wrapper<as_forward_list_t> {
 public:
     constexpr as_forward_list_t &operator()() noexcept { return *this; }
 
     template<typename T>
-    std::forward_list<T> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &, bool &unbounded) {
+    std::forward_list<T> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_forward_list on an unbounded stream");
 

@@ -70,7 +70,7 @@ struct or_throw_t : opt_step_wrapper<or_throw_t> {
 
     template<typename Func>
     auto operator()(Func &&f) {
-        return or_throw_func_t(detail::func_or_except<Func>::get(f));
+        return or_throw_func_t(func_or_except<Func>::get(f));
     }                                         
 };
 

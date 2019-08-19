@@ -11,12 +11,12 @@ namespace streamer {
 namespace detail {
 
 
-class reversed_t : public detail::step_wrapper<reversed_t> {
+class reversed_t : public step_wrapper<reversed_t> {
 public:
     constexpr reversed_t &operator()() noexcept { return *this; }
 
     template<typename T>
-    streamer_t<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    streamer_t<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use reversed on an unbounded stream");
 

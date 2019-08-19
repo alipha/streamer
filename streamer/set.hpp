@@ -20,13 +20,13 @@ namespace detail {
 
     
 template<typename Comp>
-class as_set_custom_t : public detail::step_wrapper<as_set_custom_t<Comp> > {
+class as_set_custom_t : public step_wrapper<as_set_custom_t<Comp> > {
 public:
     as_set_custom_t(Comp &&c, bool throw_on_dup) 
         : comp(std::move(c)), dup_throw(throw_on_dup) {}
 
     template<typename T>
-    std::set<T, Comp> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::set<T, Comp> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_set on an unbounded stream");
 
@@ -49,7 +49,7 @@ private:
 };
 
 
-class as_set_t : public detail::step_wrapper<as_set_t> {
+class as_set_t : public step_wrapper<as_set_t> {
 public:
     as_set_t(bool throw_on_dup = true) : dup_throw(throw_on_dup) {}
 
@@ -59,16 +59,16 @@ public:
 
     template<typename Comp>
     auto operator()(Comp comp, bool throw_on_dup = true) { 
-        return as_set_custom_t(detail::member_comparer(std::move(comp)), throw_on_dup); 
+        return as_set_custom_t(member_comparer(std::move(comp)), throw_on_dup); 
     }
 
     template<typename KeyFunc, typename Comp>
     auto operator()(KeyFunc keyFunc, Comp comp, bool throw_on_dup = true) { 
-        return as_set_custom_t(detail::member_comparer_custom(keyFunc, std::move(comp)), throw_on_dup); 
+        return as_set_custom_t(member_comparer_custom(keyFunc, std::move(comp)), throw_on_dup); 
     }
 
     template<typename T>
-    std::set<T> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::set<T> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &s, bool &unbounded) {
         return as_set_custom_t<std::less<T> >(std::less<T>(), dup_throw).stream(st, s, unbounded);
     }
 
@@ -79,12 +79,12 @@ private:
 
 
 template<typename Comp>
-class as_multiset_custom_t : public detail::step_wrapper<as_multiset_custom_t<Comp> > {
+class as_multiset_custom_t : public step_wrapper<as_multiset_custom_t<Comp> > {
 public:
     as_multiset_custom_t(Comp &&c) : comp(std::move(c)) {}
 
     template<typename T>
-    std::multiset<T, Comp> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &, bool &unbounded) {
+    std::multiset<T, Comp> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_multiset on an unbounded stream");
 
@@ -96,22 +96,22 @@ private:
 };
 
 
-class as_multiset_t : public detail::step_wrapper<as_multiset_t> {
+class as_multiset_t : public step_wrapper<as_multiset_t> {
 public:
     constexpr as_multiset_t &operator()() noexcept { return *this; }
 
     template<typename Comp>
     auto operator()(Comp comp) { 
-        return as_multiset_custom_t(detail::member_comparer(std::move(comp))); 
+        return as_multiset_custom_t(member_comparer(std::move(comp))); 
     }
 
     template<typename KeyFunc, typename Comp>
     auto operator()(KeyFunc keyFunc, Comp comp) { 
-        return as_multiset_custom_t(detail::member_comparer_custom(keyFunc, std::move(comp))); 
+        return as_multiset_custom_t(member_comparer_custom(keyFunc, std::move(comp))); 
     }
 
     template<typename T>
-    std::multiset<T> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::multiset<T> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &s, bool &unbounded) {
         return as_multiset_custom_t<std::less<T> >(std::less<T>()).stream(st, s, unbounded);
     }
 };

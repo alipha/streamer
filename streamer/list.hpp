@@ -11,12 +11,12 @@ namespace streamer {
 namespace detail {
 
     
-class as_list_t : public detail::step_wrapper<as_list_t> {
+class as_list_t : public step_wrapper<as_list_t> {
 public:
     constexpr as_list_t &operator()() noexcept { return *this; }
 
     template<typename T>
-    std::list<T> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &, bool &unbounded) {
+    std::list<T> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_list on an unbounded stream");
 

@@ -53,7 +53,7 @@ private:
 };
 
 
-class first_t : public detail::step_wrapper<first_t> {
+class first_t : public step_wrapper<first_t> {
 public:
     constexpr first_t &operator()() noexcept { return *this; }
 
@@ -61,7 +61,7 @@ public:
     first_if_t<UnaryPred> operator()(UnaryPred pred) { return first_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &) {
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &) {
         return s->get();
     }
 };
@@ -92,7 +92,7 @@ private:
 };
 
 
-class single_t : public detail::step_wrapper<single_t> {
+class single_t : public step_wrapper<single_t> {
 public:
     constexpr single_t &operator()() noexcept { return *this; }
 
@@ -100,7 +100,7 @@ public:
     single_if_t<UnaryPred> operator()(UnaryPred pred) { return single_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use single on an unbounded stream");
 
@@ -138,7 +138,7 @@ private:
 };
 
 
-class last_t : public detail::step_wrapper<last_t> {
+class last_t : public step_wrapper<last_t> {
 public:
     constexpr last_t &operator()() noexcept { return *this; }
 
@@ -146,7 +146,7 @@ public:
     last_if_t<UnaryPred> operator()(UnaryPred pred) { return last_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::optional<T> stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use last on an unbounded stream");
 

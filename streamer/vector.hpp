@@ -12,12 +12,12 @@ namespace streamer {
 namespace detail {
 
     
-class as_vector_t : public detail::step_wrapper<as_vector_t> {
+class as_vector_t : public step_wrapper<as_vector_t> {
 public:
     constexpr as_vector_t &operator()() noexcept { return *this; }
 
     template<typename T>
-    std::vector<T> stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &, bool &unbounded) {
+    std::vector<T> stream(streamer_t<T> &st, std::unique_ptr<step<T> > &, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_vector on an unbounded stream");
 

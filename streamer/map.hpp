@@ -25,14 +25,14 @@ public:
         : k(std::move(keyFunc)), v(std::move(valueFunc)), dup_throw(throw_on_dup) {}
 
     template<typename T>
-    auto stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    auto stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use as_map on an unbounded stream");
 
-        auto k_mapper = detail::member_mapper(k);
-        auto v_mapper = detail::member_mapper(v);
-        using K = typename detail::remove_ref_cv<decltype(k_mapper(values[0]))>::type;
-        using V = typename detail::remove_ref_cv<decltype(v_mapper(values[0]))>::type;
+        auto k_mapper = member_mapper(k);
+        auto v_mapper = member_mapper(v);
+        using K = typename remove_ref_cv<decltype(k_mapper(values[0]))>::type;
+        using V = typename remove_ref_cv<decltype(v_mapper(values[0]))>::type;
 
         std::map<K, V> out;
 
@@ -60,7 +60,7 @@ public:
         : k(std::move(keyFunc)), dup_throw(throw_on_dup) {}
 
     template<typename T>
-    auto stream(streamer_t<T> &st, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    auto stream(streamer_t<T> &st, std::unique_ptr<step<T> > &s, bool &unbounded) {
         return as_map_t(std::move(k), identity<T>(), dup_throw).stream(st, s, unbounded);
     }
 

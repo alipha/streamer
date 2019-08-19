@@ -99,7 +99,7 @@ private:
 };
 
 
-class count_t : public detail::step_wrapper<count_t> {
+class count_t : public step_wrapper<count_t> {
 public:
     constexpr count_t &operator()() noexcept { return *this; }
 
@@ -107,7 +107,7 @@ public:
     count_if_t<UnaryPred> operator()(UnaryPred pred) { return count_if_t<UnaryPred>(std::move(pred)); }
 
     template<typename T>
-    std::size_t stream(streamer_t<T> &, std::unique_ptr<detail::step<T> > &s, bool &unbounded) {
+    std::size_t stream(streamer_t<T> &, std::unique_ptr<step<T> > &s, bool &unbounded) {
         if(unbounded)
             throw unbounded_stream("cannot use item_count on an unbounded stream");
 
