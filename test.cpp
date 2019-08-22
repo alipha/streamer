@@ -1,7 +1,8 @@
 #include "examples/example_as_deque.cpp"
 #include "examples/example_as_forward_list.cpp"
 #include "examples/example_as_list.cpp"
-#include "examples/example_as_multiset.cpp"
+#include "examples/example_as_map.cpp"
+/*#include "examples/example_as_multiset.cpp"
 #include "examples/example_as_queue.cpp"
 #include "examples/example_as_set.cpp"
 #include "examples/example_as_stack.cpp"
@@ -32,12 +33,14 @@
 #include "examples/example_stream_of.cpp"
 #include "examples/example_take.cpp"
 #include "examples/example_take_while.cpp"
+*/
 
 int main() {
     example_as_deque();
     example_as_forward_list();
     example_as_list();
-    example_as_multiset();
+    example_as_map();
+/*    example_as_multiset();
     example_as_queue();
     example_as_set();
     example_as_stack();
@@ -68,5 +71,5 @@ int main() {
     example_stream_of();
     example_take();
     example_take_while();
-    return 0;
+ */   return 0;
 }

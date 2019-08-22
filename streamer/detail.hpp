@@ -126,6 +126,11 @@ auto member_comparer_custom(U (T::*p)() const noexcept, Comp &&comp) {
     return [p, comp](const T &left, const T &right) { return comp((left.*p)(), (right.*p)()); };
 }
 
+//template<typename T, typename U, typename Comp>
+//auto member_comparer_custom(const U& (T::*p)() const, Comp &&comp) {
+//    return [p, comp](const T &left, const T &right) { return comp((left.*p)(), (right.*p)()); };
+//}
+
 template<typename Comp>
 auto member_comparer(Comp &&comp) { return comp; }
 
@@ -137,6 +142,9 @@ auto member_comparer(U (T::*p)() const) { return member_comparer_custom(p, std::
 
 template<typename T, typename U>
 auto member_comparer(U (T::*p)() const noexcept) { return member_comparer_custom(p, std::less<U>()); }
+
+//template<typename T, typename U>
+//auto member_comparer(const U& (T::*p)() const) { return member_comparer_custom(p, std::less<U>()); }
 
   
 } // namespace detail
