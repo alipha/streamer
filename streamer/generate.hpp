@@ -79,6 +79,17 @@ auto generator(T seed, UnaryFunc f) {
 }
 
 
+template<typename T>
+auto from(T start, T step) {
+    return generator(std::move(start), [step](auto x) { return x += step; });
+}
+
+
+template<typename T>
+auto from(T start) {
+    return generator(std::move(start), [](auto x) { return ++x; });
+}
+
 
 template<typename T, typename UnaryFunc, typename KeyFunc, typename Comp>
 streamer_t<T> range(T begin, T end, UnaryFunc step, KeyFunc keyFunc, Comp comp) {
